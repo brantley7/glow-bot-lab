@@ -104,6 +104,19 @@ details ul{padding-left:18px}
 #board td.empty,#lib li.empty{color:var(--muted);white-space:normal}
 #lib{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 #lib li{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.levels{position:relative}
+.lvg{flex:none;align-self:center;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:0 2px 0 8px}
+.lvg:first-child{padding-left:2px}
+#lb{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+#lb th{text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:4px 8px 4px 0;white-space:nowrap}
+#lb td{padding:6px 8px 6px 0;border-top:1px solid var(--line);white-space:nowrap}
+#lb tr.me td{font-weight:800;color:var(--azure)}
+#lb td.empty{color:var(--muted);white-space:normal}
+.hubbtns{display:inline-flex;gap:4px}
+.cfg{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;margin-top:6px}
+.cfg label{font-size:13px;color:var(--muted)}
+.cfg select{font:inherit;font-weight:800;padding:5px 8px;border-radius:8px;border:2px solid var(--line);background:var(--bg);color:var(--ink);max-width:100%}
+@media (max-width:420px){ .cfg{grid-template-columns:1fr} }
 .link{border:0;background:none;padding:0;color:var(--muted);text-decoration:underline;font-size:13px;align-self:flex-start}
 
 .code{position:relative;min-width:0;min-height:0;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--panel)}
@@ -148,6 +161,7 @@ details ul{padding-left:18px}
         <button id="reset" class="btn" type="button">Reset mat</button>
         <button id="speed" class="btn" type="button">Speed 1×</button>
         <button id="zoom" class="btn" type="button">Zoom in</button>
+        <span class="hubbtns" aria-label="Hub buttons"><button id="hubL" class="btn sm" type="button">◀ Hub</button><button id="hubR" class="btn sm" type="button">Hub ▶</button></span>
         <button id="docks" class="btn" type="button" hidden>Docks</button>
         <label class="tog" for="wobble"><input type="checkbox" id="wobble"> Real-world wobble</label>
         <label class="tog" for="jig" id="jigL" hidden><input type="checkbox" id="jig"> Launch jig</label>
@@ -159,7 +173,7 @@ details ul{padding-left:18px}
         <div class="chip"><span class="k">Sensor E</span><i class="sw" id="hSw"></i><b id="hCol">white</b><span id="hRef">92%</span></div>
         <div class="chip"><span class="k">Fork C</span><b id="hArm">up</b></div>
         <div class="chip"><span class="k">Timer</span><b id="hTime">0.0</b></div>
-        <div class="chip" id="cDisp" hidden><span class="k">Hub</span><b id="hDisp"></b></div>
+        <div class="chip" id="cDisp" hidden><span class="k">Hub</span><i class="sw" id="hLight" hidden></i><b id="hDisp"></b></div>
       </div>
       <div class="goal">
         <h2 id="lname"></h2>
@@ -170,12 +184,26 @@ details ul{padding-left:18px}
           <ul>
             <li>One wheel rotation rolls the robot <b>17.5 cm</b>. 360 degrees is one rotation.</li>
             <li>A quarter turn on the spot takes about <b>11 cm</b> of wheel travel (226 degrees).</li>
-            <li>Drive motors are on <b>A + B</b>. The fork arm is motor <b>C</b>: clockwise lifts it, 90 degrees is all the way up.</li>
-            <li>The color sensor is on port <b>E</b>, front right corner, looking down at the mat.</li>
+            <li>Which port does what is set under <b>Robot setup</b>. The fork arm lifts 90 degrees from down to all the way up.</li>
+            <li>The color sensor sits at the front right corner, looking down at the mat. A distance or force sensor, if you add one, faces forward.</li>
+            <li>A motor on a port with nothing attached in Robot setup still runs and counts degrees, so programs for other attachments don't stop.</li>
             <li>Faint squares on the mat are 10 cm wide.</li>
             <li>On Match Day: ▲ lift with the fork from underneath, ▼ lower the fork onto it, round knobs get pushed along their track.</li>
+            <li>After you set something down, back away with the fork still down before raising it, or you will pick it up again.</li>
             <li>Drag a block back onto the block menu to delete it.</li>
           </ul>
+        </details>
+        <details id="setup"><summary>Robot setup (ports)</summary>
+          <p>Match these to how your real robot is plugged in. Blocks you drag out next will use these ports.</p>
+          <div class="cfg">
+            <label for="cfgDrive">Wheel motors (left+right)</label><select id="cfgDrive"></select>
+            <label for="cfgFork">Fork arm motor</label><select id="cfgFork"></select>
+            <label for="cfgUp">Fork goes up when the motor turns</label><select id="cfgUp"><option value="cw">↻ clockwise</option><option value="ccw">↺ counterclockwise</option></select>
+            <label for="cfgSensor">Color sensor</label><select id="cfgSensor"></select>
+            <label for="cfgDist">Distance sensor (front)</label><select id="cfgDist"></select>
+            <label for="cfgForce">Force sensor (front)</label><select id="cfgForce"></select>
+          </div>
+          <p class="note" id="cfgNote"></p>
         </details>
         <details><summary>Stuck on the field? What the rules say</summary>
           <ul>
@@ -195,6 +223,9 @@ details ul{padding-left:18px}
         <div class="who"><label for="me">Coding as</label><select id="me"></select><button class="btn sm" id="addMe" type="button">Add coder</button></div>
         <p id="teamNote" class="note"></p>
         <div class="tblwrap"><table id="board"><thead><tr><th>#</th><th>Coder</th><th>Stars</th><th>Solved</th><th>Match best</th></tr></thead><tbody id="boardBody"></tbody></table></div>
+        <h3>Challenge leaderboard</h3>
+        <div class="who"><label for="lbPick">Challenge</label><select id="lbPick"></select></div>
+        <div class="tblwrap"><table id="lb"><thead><tr><th>#</th><th>Coder</th><th id="lbC1">Stars</th><th id="lbC2">Best ★★★ time</th></tr></thead><tbody id="lbBody"></tbody></table></div>
         <h3>Team programs for this challenge</h3>
         <ul id="lib"></ul>
         <div class="who"><button class="btn sm" id="shareProg" type="button" hidden>Share my program</button><button class="btn sm" id="copyProg" type="button">Copy program text</button><button class="btn sm" id="pasteProg" type="button">Paste program text</button></div>
@@ -228,7 +259,12 @@ const val=(name,check)=>check?{type:'input_value',name,check}:{type:'input_value
 const S={previousStatement:null,nextStatement:null,inputsInline:true};
 const UNITS=[['cm','cm'],['rotations','rotations'],['degrees','degrees'],['seconds','seconds'],['inches','in']];
 const MUNITS=[['degrees','degrees'],['rotations','rotations'],['seconds','seconds']];
-const PORTC=[['C','C']], PORTE=[['E','E']];
+const PORT_LIST=['A','B','C','D','E','F'], PORTS=PORT_LIST.map(p=>[p,p]), PORTC=PORTS, PORTE=PORTS;
+const PAIRS=[]; PORT_LIST.forEach(a=>PORT_LIST.forEach(b=>{ if(a!==b) PAIRS.push([a+'+'+b,a+b]); }));
+const CFG=Object.assign({drive:'CD',fork:'E',forkUp:'ccw',sensor:'F',dist:'',force:''},store.cfg||{});
+const UPS=()=>CFG.forkUp==='cw'?1:-1;
+const IMAGES=[['♥ heart','♥'],['☺ happy','☺'],['☹ sad','☹'],['✓ yes','✓'],['✗ no','✗'],['↑ arrow up','↑'],['↓ arrow down','↓'],['← arrow left','←'],['→ arrow right','→'],['★ star','★'],['■ square','■'],['♪ music','♪']];
+const DUNITS=[['cm','cm'],['inches','in'],['%','%']];
 const SPIN=[['↻ clockwise','cw'],['↺ counterclockwise','ccw']];
 const COLORS=[['black','black'],['white','white'],['red','red'],['green','green'],['blue','blue'],['yellow','yellow'],['no color','none']];
 Blockly.defineBlocksWithJsonArray([
@@ -241,15 +277,15 @@ Blockly.defineBlocksWithJsonArray([
  {type:'mv_tank',message0:'move for %1 %2 at %3 %4 % speed',args0:[val('AMOUNT'),dd('UNIT',UNITS),val('L'),val('R')],...S,style:'mv',tooltip:'Left wheel speed, then right wheel speed.'},
  {type:'mv_start_tank',message0:'start moving at %1 %2 % speed',args0:[val('L'),val('R')],...S,style:'mv'},
  {type:'mv_rotcm',message0:'set 1 motor rotation to %1 cm moved',args0:[val('CM')],...S,style:'mv',tooltip:'Tells the hub how far one wheel turn rolls. Your wheels roll 17.5 cm.'},
- {type:'mv_motors',message0:'set movement motors to %1',args0:[dd('PAIR',[['A+B','AB']])],...S,style:'mv',tooltip:'Your drive motors are plugged into ports A and B.'},
- {type:'mt_run_for',message0:'%1 run %2 for %3 %4',args0:[dd('PORT',PORTC),dd('DIR',SPIN),val('AMOUNT'),dd('UNIT',MUNITS)],...S,style:'mt',tooltip:'Motor C is the fork arm. Clockwise lifts it.'},
+ {type:'mv_motors',message0:'set movement motors to %1',args0:[dd('PAIR',PAIRS)],...S,style:'mv',tooltip:'The two ports your wheel motors use, left wheel first. Robot setup says which ports your robot uses.'},
+ {type:'mt_run_for',message0:'%1 run %2 for %3 %4',args0:[dd('PORT',PORTC),dd('DIR',SPIN),val('AMOUNT'),dd('UNIT',MUNITS)],...S,style:'mt',tooltip:'Robot setup says which port the fork arm is on and which way lifts it.'},
  {type:'mt_start',message0:'%1 start motor %2',args0:[dd('PORT',PORTC),dd('DIR',SPIN)],...S,style:'mt'},
  {type:'mt_stop',message0:'%1 stop motor',args0:[dd('PORT',PORTC)],...S,style:'mt'},
  {type:'mt_speed',message0:'%1 set speed to %2 %',args0:[dd('PORT',PORTC),val('SPEED')],...S,style:'mt'},
- {type:'mt_goto',message0:'%1 go to position %2',args0:[dd('PORT',PORTC),val('POS')],...S,style:'mt',tooltip:'0 is fork down, 90 is fork all the way up.'},
+ {type:'mt_goto',message0:'%1 go %2 to position %3',args0:[dd('PORT',PORTC),dd('DIR',[['shortest path','short'],['clockwise','cw'],['counterclockwise','ccw']]),val('POS')],...S,style:'mt',tooltip:'On the fork motor, 0 is fork down and 90 is all the way up (or -90 if counterclockwise lifts it).'},
  {type:'mt_pos',message0:'%1 position',args0:[dd('PORT',PORTC)],output:'Number',style:'mt'},
  {type:'lt_write',message0:'write %1',args0:[val('TEXT')],...S,style:'hub'},
- {type:'sd_beep',message0:'play beep for %1 seconds',args0:[val('SECS')],...S,style:'hub'},
+ {type:'sd_beep',message0:'play beep %1 for %2 seconds',args0:[val('NOTE'),val('SECS')],...S,style:'hub'},
  {type:'ct_wait',message0:'wait %1 seconds',args0:[val('SECS')],...S,style:'ct'},
  {type:'ct_repeat',message0:'repeat %1',args0:[val('TIMES')],message1:'%1',args1:[{type:'input_statement',name:'DO'}],...S,style:'ct'},
  {type:'ct_forever',message0:'forever',message1:'%1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,style:'ct'},
@@ -270,34 +306,104 @@ Blockly.defineBlocksWithJsonArray([
  {type:'op_logic',message0:'%1 %2 %3',args0:[val('A','Boolean'),dd('OP',[['and','and'],['or','or']]),val('B','Boolean')],output:'Boolean',inputsInline:true,style:'op'},
  {type:'op_not',message0:'not %1',args0:[val('A','Boolean')],output:'Boolean',inputsInline:true,style:'op'},
  {type:'op_random',message0:'pick random %1 to %2',args0:[val('A'),val('B')],output:'Number',inputsInline:true,style:'op'},
+ {type:'mv_start_dir',message0:'start moving %1',args0:[dd('DIR',[['↑ forward','fwd'],['↓ backward','back'],['↺ spin left','left'],['↻ spin right','right']])],...S,style:'mv'},
+ {type:'mv_steer_speed',message0:'move %1 for %2 %3 at %4 % speed',args0:[val('STEER'),val('AMOUNT'),dd('UNIT',UNITS),val('SPEED')],...S,style:'mv',tooltip:'Steering 0 is straight. The speed here is used for this block only.'},
+ {type:'mv_start_steer_speed',message0:'start moving %1 at %2 % speed',args0:[val('STEER'),val('SPEED')],...S,style:'mv'},
+ {type:'mv_stop_method',message0:'set movement motors to %1 at stop',args0:[dd('M',[['brake','brake'],['hold','hold'],['coast','coast']])],...S,style:'mv',tooltip:'Accepted so your program matches the SPIKE app. The simulator robot always stops right away.'},
+ {type:'mv_accel',message0:'set movement acceleration to %1',args0:[dd('A',[['default','default'],['fast','fast'],['balanced','balanced'],['smooth','smooth'],['slow','slow'],['very slow','vslow']])],...S,style:'mv',tooltip:'Accepted so your program matches the SPIKE app. It has no effect in the simulator.'},
+ {type:'mt_run_for_speed',message0:'%1 run for %2 %3 at %4 % speed',args0:[dd('PORT',PORTC),val('AMOUNT'),dd('UNIT',MUNITS),val('SPEED')],...S,style:'mt',tooltip:'Positive speed turns clockwise (fork up), negative counterclockwise.'},
+ {type:'mt_start_speed',message0:'%1 start motor at %2 % speed',args0:[dd('PORT',PORTC),val('SPEED')],...S,style:'mt'},
+ {type:'mt_speed_r',message0:'%1 speed',args0:[dd('PORT',PORTC)],output:'Number',style:'mt'},
+ {type:'mt_rel',message0:'%1 relative position',args0:[dd('PORT',PORTC)],output:'Number',style:'mt'},
+ {type:'mt_set_rel',message0:'%1 set relative position to %2',args0:[dd('PORT',PORTC),val('POS')],...S,style:'mt'},
+ {type:'mt_goto_rel',message0:'%1 go to relative position %2 at %3 % speed',args0:[dd('PORT',PORTC),val('POS'),val('SPEED')],...S,style:'mt'},
+ {type:'lt_clear',message0:'turn off pixels',...S,style:'hub'},
+ {type:'lt_center',message0:'set Power Button light to %1',args0:[dd('C',[['green','green'],['red','red'],['blue','blue'],['yellow','yellow'],['white','white'],['off','off']])],...S,style:'hub'},
+ {type:'sd_beep_start',message0:'start playing beep %1',args0:[val('NOTE')],...S,style:'hub'},
+ {type:'sd_stop',message0:'stop all sounds',...S,style:'hub'},
+ {type:'ev_button',message0:'when %1 Button %2',args0:[dd('BTN',[['left','left'],['right','right']]),dd('EV',[['pressed','pressed']])],nextStatement:null,style:'ev',tooltip:'Use the Left and Right hub buttons under the mat while the program runs.'},
+ {type:'ev_color',message0:'%1 when color is %2',args0:[dd('PORT',PORTE),dd('COLOR',COLORS)],nextStatement:null,style:'ev'},
+ {type:'ev_timer',message0:'when timer > %1',args0:[val('VAL')],nextStatement:null,style:'ev'},
+ {type:'ev_cond',message0:'when %1',args0:[val('COND','Boolean')],nextStatement:null,style:'ev'},
+ {type:'ev_receive',message0:'when I receive %1',args0:[{type:'field_input',name:'MSG',text:'message1'}],nextStatement:null,style:'ev'},
+ {type:'ev_broadcast',message0:'broadcast %1',args0:[{type:'field_input',name:'MSG',text:'message1'}],...S,style:'ev'},
+ {type:'ev_broadcast_wait',message0:'broadcast %1 and wait',args0:[{type:'field_input',name:'MSG',text:'message1'}],...S,style:'ev'},
+ {type:'ct_stop_opt',message0:'stop %1',args0:[dd('OPT',[['and exit program','all'],['this stack','this']])],previousStatement:null,style:'ct'},
+ {type:'ct_stop_other',message0:'stop other stacks',...S,style:'ct'},
+ {type:'sn_color',message0:'%1 color',args0:[dd('PORT',PORTE)],output:null,style:'sn',tooltip:'The color name the sensor sees, such as black or green.'},
+ {type:'sn_button',message0:'is %1 button %2 ?',args0:[dd('BTN',[['left','left'],['right','right']]),dd('EV',[['pressed','pressed'],['released','released']])],output:'Boolean',style:'sn'},
+ {type:'sn_axis',message0:'%1 angle',args0:[dd('AX',[['yaw','yaw'],['pitch','pitch'],['roll','roll']])],output:'Number',style:'sn'},
+ {type:'op_between',message0:'is %1 in between %2 and %3 ?',args0:[val('V'),val('LO'),val('HI')],output:'Boolean',inputsInline:true,style:'op'},
+ {type:'op_mod',message0:'%1 mod %2',args0:[val('A'),val('B')],output:'Number',inputsInline:true,style:'op'},
+ {type:'op_round',message0:'round %1',args0:[val('A')],output:'Number',inputsInline:true,style:'op'},
+ {type:'op_math',message0:'%1 of %2',args0:[dd('OP',[['abs','abs'],['floor','floor'],['ceiling','ceil'],['sqrt','sqrt'],['sin','sin'],['cos','cos'],['tan','tan'],['asin','asin'],['acos','acos'],['atan','atan'],['ln','ln'],['log','log'],['e ^','exp'],['10 ^','pow10']]),val('A')],output:'Number',inputsInline:true,style:'op'},
+ {type:'op_join',message0:'join %1 %2',args0:[val('A'),val('B')],output:'String',inputsInline:true,style:'op'},
+ {type:'op_length',message0:'length of %1',args0:[val('A')],output:'Number',inputsInline:true,style:'op'},
+ {type:'op_contains',message0:'%1 contains %2 ?',args0:[val('A'),val('B')],output:'Boolean',inputsInline:true,style:'op'},
+ {type:'lt_image_for',message0:'turn on %1 for %2 seconds',args0:[dd('IMG',IMAGES),val('SECS')],...S,style:'hub'},
+ {type:'lt_image',message0:'turn on %1',args0:[dd('IMG',IMAGES)],...S,style:'hub'},
+ {type:'lt_bright',message0:'set pixel brightness to %1 %',args0:[val('V')],...S,style:'hub',tooltip:'Accepted so your program matches the SPIKE app.'},
+ {type:'lt_pixel',message0:'set pixel at %1 , %2 to %3',args0:[dd('X',[['1','1'],['2','2'],['3','3'],['4','4'],['5','5']]),dd('Y',[['1','1'],['2','2'],['3','3'],['4','4'],['5','5']]),val('V')],...S,style:'hub',tooltip:'Accepted so your program matches the SPIKE app.'},
+ {type:'lt_rotate',message0:'rotate %1',args0:[dd('DIR',SPIN)],...S,style:'hub',tooltip:'Accepted so your program matches the SPIKE app.'},
+ {type:'lt_orient',message0:'set orientation to %1',args0:[dd('O',[['upright','up'],['left','left'],['right','right'],['upside down','down']])],...S,style:'hub',tooltip:'Accepted so your program matches the SPIKE app.'},
+ {type:'lt_ultra',message0:'%1 light up %2',args0:[dd('PORT',PORTS),dd('P',[['all on','all'],['all off','off'],['top','top'],['bottom','bottom']])],...S,style:'hub',tooltip:'Lights on a distance sensor. No effect in the simulator.'},
+ {type:'sd_play',message0:'play sound %1 until done',args0:[dd('SND',[['Cat Meow 1','cat'],['Ding','ding'],['Hello','hello'],['Tada','tada']])],...S,style:'snd'},
+ {type:'sd_start_sound',message0:'start sound %1',args0:[dd('SND',[['Cat Meow 1','cat'],['Ding','ding'],['Hello','hello'],['Tada','tada']])],...S,style:'snd'},
+ {type:'sd_effect_change',message0:'change %1 effect by %2',args0:[dd('FX',[['pitch','pitch'],['pan left/right','pan']]),val('V')],...S,style:'snd'},
+ {type:'sd_effect_set',message0:'set %1 effect to %2',args0:[dd('FX',[['pitch','pitch'],['pan left/right','pan']]),val('V')],...S,style:'snd'},
+ {type:'sd_effect_clear',message0:'clear sound effects',...S,style:'snd'},
+ {type:'sd_vol_change',message0:'change volume by %1',args0:[val('V')],...S,style:'snd'},
+ {type:'sd_vol_set',message0:'set volume to %1 %',args0:[val('V')],...S,style:'snd'},
+ {type:'sd_volume',message0:'volume',output:'Number',style:'snd'},
+ {type:'ev_force',message0:'%1 when %2',args0:[dd('PORT',PORTS),dd('EV',[['pressed','pressed'],['released','released']])],nextStatement:null,style:'ev',tooltip:'Force sensor. Turn one on in Robot setup.'},
+ {type:'ev_dist',message0:'%1 when %2 %3 %4',args0:[dd('PORT',PORTS),dd('OP',[['closer than','<'],['farther than','>'],['exactly at','=']]),val('VAL'),dd('UNIT',DUNITS)],nextStatement:null,style:'ev',tooltip:'Distance sensor. Turn one on in Robot setup.'},
+ {type:'ev_tilt',message0:'when tilted %1',args0:[dd('DIR',[['forward','f'],['backward','b'],['left','l'],['right','r'],['any','any']])],nextStatement:null,style:'ev',tooltip:'The robot stays flat on the mat, so this never happens in the simulator.'},
+ {type:'ev_orient',message0:'when %1 is up',args0:[dd('FACE',[['front','front'],['back','back'],['top','top'],['bottom','bottom'],['left side','left'],['right side','right']])],nextStatement:null,style:'ev',tooltip:'The hub lies flat with its top up.'},
+ {type:'ev_gesture',message0:'when %1',args0:[dd('G',[['shaken','shake'],['tapped','tap'],['falling','fall']])],nextStatement:null,style:'ev',tooltip:'The robot is never shaken in the simulator.'},
+ {type:'sn_force_is',message0:'%1 is %2 ?',args0:[dd('PORT',PORTS),dd('EV',[['pressed','pressed'],['released','released'],['hard pressed','hard']])],output:'Boolean',style:'sn',tooltip:'Force sensor on the front of the robot. Turn one on in Robot setup.'},
+ {type:'sn_force',message0:'%1 pressure in %2',args0:[dd('PORT',PORTS),dd('UNIT',[['%','%'],['newtons','n']])],output:'Number',style:'sn'},
+ {type:'sn_dist_is',message0:'%1 is %2 %3 %4 ?',args0:[dd('PORT',PORTS),dd('OP',[['closer than','<'],['farther than','>'],['exactly at','=']]),val('VAL'),dd('UNIT',DUNITS)],output:'Boolean',inputsInline:true,style:'sn',tooltip:'Distance sensor on the front of the robot. Turn one on in Robot setup.'},
+ {type:'sn_dist',message0:'%1 distance in %2',args0:[dd('PORT',PORTS),dd('UNIT',DUNITS)],output:'Number',style:'sn',tooltip:'-1 means nothing is in range or there is no distance sensor.'},
+ {type:'sn_tilted',message0:'Is tilted %1 ?',args0:[dd('DIR',[['forward','f'],['backward','b'],['left','l'],['right','r'],['any','any']])],output:'Boolean',style:'sn'},
+ {type:'sn_orient',message0:'is %1 up?',args0:[dd('FACE',[['front','front'],['back','back'],['top','top'],['bottom','bottom'],['left side','left'],['right side','right']])],output:'Boolean',style:'sn'},
+ {type:'sn_gesture',message0:'is %1 ?',args0:[dd('G',[['shaken','shake'],['tapped','tap'],['falling','fall']])],output:'Boolean',style:'sn'},
+ {type:'op_letter',message0:'letter %1 of %2',args0:[val('N'),val('S')],output:'String',inputsInline:true,style:'op'},
  {type:'my_turn',message0:'gyro turn %1 by %2 degrees',args0:[dd('DIR',[['↻ right','right'],['↺ left','left']]),val('DEG')],...S,style:'my',tooltip:'A My Block: spins until the gyro says the turn is done.'},
  {type:'my_fork_up',message0:'fork all the way up',...S,style:'my'},
  {type:'my_fork_down',message0:'fork all the way down',...S,style:'my'}
 ]);
 const DEF={mv_move:{AMOUNT:10},mv_steer:{STEER:30,AMOUNT:10},mv_start_steer:{STEER:0},mv_speed:{SPEED:50},mv_tank:{AMOUNT:10,L:50,R:50},
- mv_start_tank:{L:50,R:50},mv_rotcm:{CM:17.5},mt_run_for:{AMOUNT:90},mt_speed:{SPEED:75},mt_goto:{POS:90},lt_write:{TEXT:'Hi'},sd_beep:{SECS:0.2},
+ mv_start_tank:{L:50,R:50},mv_rotcm:{CM:17.5},mt_run_for:{AMOUNT:90},mt_speed:{SPEED:75},mt_goto:{POS:90},mv_steer_speed:{STEER:0,AMOUNT:10,SPEED:50},mv_start_steer_speed:{STEER:0,SPEED:50},mt_run_for_speed:{AMOUNT:90,SPEED:75},mt_start_speed:{SPEED:75},mt_set_rel:{POS:0},mt_goto_rel:{POS:90,SPEED:75},sd_beep_start:{NOTE:60},sd_beep:{NOTE:60,SECS:0.2},lt_image_for:{SECS:2},lt_bright:{V:75},lt_pixel:{V:100},sd_effect_change:{V:10},sd_effect_set:{V:100},sd_vol_change:{V:-10},sd_vol_set:{V:100},ev_dist:{VAL:15},sn_dist_is:{VAL:15},op_letter:{N:1,S:'apple'},ev_timer:{VAL:5},op_between:{V:5,LO:0,HI:10},op_mod:{A:10,B:3},op_round:{A:2.5},op_math:{A:9},op_join:{A:'apple ',B:'banana'},op_length:{A:'apple'},op_contains:{A:'apple',B:'a'},lt_write:{TEXT:'Hi'},sd_beep:{SECS:0.2},
  ct_wait:{SECS:1},ct_repeat:{TIMES:4},sn_reflect_cmp:{VAL:50},op_arith:{A:1,B:1},op_cmp:{A:0,B:50},op_random:{A:1,B:10},my_turn:{DEG:90}};
 function mk(type,over,fields,extra){
   const b={type}, d=DEF[type], inputs=Object.assign({},extra);
   if(d) for(const k in d){ const v=(over&&k in over)?over[k]:d[k];
     inputs[k]={shadow: typeof v==='string'?{type:'text',fields:{TEXT:v}}:{type:'math_number',fields:{NUM:v}}}; }
   if(Object.keys(inputs).length) b.inputs=inputs;
-  if(fields) b.fields=fields;
+  const auto={};
+  if(/^mt_/.test(type)){ auto.PORT=CFG.fork; if(type==='mt_run_for'||type==='mt_start') auto.DIR=CFG.forkUp; }
+  if(['sn_is_color','sn_color','sn_reflect_cmp','sn_reflect','ev_color'].indexOf(type)>=0) auto.PORT=CFG.sensor;
+  if(['ev_dist','sn_dist_is','sn_dist','lt_ultra'].indexOf(type)>=0) auto.PORT=CFG.dist||'F';
+  if(['ev_force','sn_force_is','sn_force'].indexOf(type)>=0) auto.PORT=CFG.force||'D';
+  if(type==='mv_motors') auto.PAIR=CFG.drive;
+  if(fields||Object.keys(auto).length) b.fields=Object.assign(auto,fields);
   return b;
 }
 const T=(type,over,fields)=>Object.assign({kind:'block'},mk(type,over,fields));
 const cat=(name,colour,contents)=>({kind:'category',name,colour,contents});
-const TOOLBOX={kind:'categoryToolbox',contents:[
- cat('Motors','#0A84E0',[T('mt_run_for'),T('mt_run_for',null,{DIR:'ccw'}),T('mt_start'),T('mt_stop'),T('mt_speed'),T('mt_goto'),T('mt_pos')]),
- cat('Movement','#E0399F',[T('mv_motors'),T('mv_rotcm'),T('mv_speed'),T('mv_move'),T('mv_move',{AMOUNT:11},{DIR:'right'}),T('mv_steer'),T('mv_start_steer'),T('mv_stop'),T('mv_tank'),T('mv_start_tank')]),
- cat('Light & Sound','#8E5CF0',[T('lt_write'),T('sd_beep')]),
- cat('Events','#C99700',[T('ev_start')]),
- cat('Control','#F29A00',[T('ct_wait'),T('ct_repeat'),T('ct_forever'),T('ct_if'),T('ct_ifelse'),T('ct_wait_until'),T('ct_repeat_until'),T('ct_stop')]),
- cat('Sensors','#17A9D1',[T('sn_is_color'),T('sn_reflect_cmp'),T('sn_reflect'),T('sn_yaw'),T('sn_reset_yaw'),T('sn_timer'),T('sn_reset_timer')]),
- cat('Operators','#12A150',[T('op_arith'),T('op_cmp'),T('op_logic'),T('op_not'),T('op_random')]),
+function buildToolbox(){ return {kind:'categoryToolbox',contents:[
+ cat('Motors','#0A84E0',[T('mt_run_for'),T('mt_run_for',null,{DIR:CFG.forkUp==='cw'?'ccw':'cw'}),T('mt_goto'),T('mt_start'),T('mt_stop'),T('mt_speed'),T('mt_pos'),T('mt_speed_r'),{kind:'label',text:'More Motors'},T('mt_run_for_speed'),T('mt_start_speed'),T('mt_goto_rel'),T('mt_set_rel'),T('mt_rel')]),
+ cat('Movement','#E0399F',[T('mv_motors'),T('mv_rotcm'),T('mv_speed'),T('mv_move'),T('mv_move',{AMOUNT:11},{DIR:'right'}),T('mv_steer'),T('mv_start_steer'),T('mv_stop'),T('mv_tank'),T('mv_start_tank'),T('mv_start_dir'),{kind:'label',text:'More Movement'},T('mv_steer_speed'),T('mv_start_steer_speed'),T('mv_stop_method'),T('mv_accel')]),
+ cat('Light','#8E5CF0',[T('lt_image_for'),T('lt_image'),T('lt_write'),T('lt_clear'),T('lt_bright'),T('lt_pixel'),T('lt_rotate'),T('lt_orient'),T('lt_center'),T('lt_ultra')]),
+ cat('Sound','#C86BE0',[T('sd_play'),T('sd_start_sound'),T('sd_beep'),T('sd_beep_start'),T('sd_stop'),T('sd_effect_change'),T('sd_effect_set'),T('sd_effect_clear'),T('sd_vol_change'),T('sd_vol_set'),T('sd_volume')]),
+ cat('Events','#C99700',[T('ev_start'),T('ev_color'),T('ev_force'),T('ev_dist'),T('ev_tilt'),T('ev_orient'),T('ev_gesture'),T('ev_button'),T('ev_timer'),T('ev_cond'),T('ev_receive'),T('ev_broadcast'),T('ev_broadcast_wait')]),
+ cat('Control','#F29A00',[T('ct_wait'),T('ct_repeat'),T('ct_forever'),T('ct_if'),T('ct_ifelse'),T('ct_wait_until'),T('ct_repeat_until'),T('ct_stop_other'),T('ct_stop_opt'),T('ct_stop')]),
+ cat('Sensors','#17A9D1',[T('sn_is_color'),T('sn_color'),T('sn_reflect_cmp'),T('sn_reflect'),T('sn_force_is'),T('sn_force'),T('sn_dist_is'),T('sn_dist'),T('sn_tilted'),T('sn_orient'),T('sn_gesture'),T('sn_axis'),T('sn_yaw'),T('sn_reset_yaw'),T('sn_button'),T('sn_timer'),T('sn_reset_timer')]),
+ cat('Operators','#12A150',[T('op_arith'),T('op_random'),T('op_cmp'),T('op_logic'),T('op_not'),T('op_between'),T('op_join'),T('op_letter'),T('op_length'),T('op_contains'),T('op_mod'),T('op_round'),T('op_math')]),
  {kind:'category',name:'Variables',colour:'#F0802B',custom:'VARIABLE'},
- cat('My Blocks','#F0525A',[T('my_turn'),T('my_fork_up'),T('my_fork_down')])
-]};
+ {kind:'category',name:'My Blocks',colour:'#F0525A',custom:'MYBLOCKS'}
+]}; }
+const TOOLBOX=buildToolbox();
 function program(list){
   let head=null; for(let i=list.length-1;i>=0;i--){ const b=Object.assign({},list[i]); if(head) b.next={block:head}; head=b; }
   const s={type:'ev_start',x:24,y:24}; if(head) s.next={block:head};
@@ -309,6 +415,25 @@ let L, W, R;
 const onPad=p=>Math.hypot(R.x-p.x,R.y-p.y)<=p.r-2;
 const inside=(z,x,y)=>z.r?Math.hypot(x-z.x,y-z.y)<=z.r:(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h);
 const allGates=()=>W.gates.every(g=>g.hit);
+/* One practice challenge per robot-game mission, on the full BIOGLOW field.
+   [mission, id, name, start side, points needed, the models that belong to it, task, tip] */
+const MC=[
+ [1,'m01','Drone Survey','L',30,['drone','map'],'Lower the fork onto the drone launcher ▼, then flip the LiDAR map ▲ in the dashed survey box.','Both are near the south wall, just east of the big river. Come in from the north with the fork up, stop, then lower or lift. The short black diagonal line is a handy landmark for the color sensor.'],
+ [2,'m02','Exploding Seeds','L',30,['trig','s1','s2','s3','stalk'],'Push the green trigger knob east until it stops, so all three seeds fly off the stalk.','Line up facing east on the same row as the trigger, fork up, and drive straight into it. Stay clear of the stalk itself.'],
+ [3,'m03','Flip the Rock','L',30,['rock'],'Lift the rock ▲ to drop the research flag, then lower the fork again to put the rock back.','The rock is against the west wall, just north of the left launch area. You can start lined up under it, facing north.'],
+ [4,'m04','Lucky Leaves','L',30,['leafA','leafB','katy'],'Carry both leaves out of the nest and set them down. Leave the katydid (the one with eyes) exactly where it is.','The katydid sits in a different slot every run, so look before you plan. Come in from the south, fork down under a leaf, lift, back out, and set it down outside the dashed nest.'],
+ [5,'m05','Reaching Roots','L',20,['root'],'Push the root knob north all the way to the wall.','Drive north on the same line as the knob with the fork up. Slow down for the last few centimetres.'],
+ [6,'m06','Leafcutter Frenzy','L',40,['ant'],'Push the ant east along its track into the nest without losing any leaf fragments.','The ant is close to the north wall, so arrive already facing east, a little south of the ant. Turning on the spot next to it will knock it. Push at 25% speed or slower.'],
+ [7,'m07','Humongous Fungus','R',20,['fungus'],'Slide the fork under the mycelium lever and lift it ▲.','Come from the south facing north. Lower the fork before you reach the lever, creep forward, then lift. Keep clear of the building on the mine dock to the east.'],
+ [8,'m08','Tangled','L',30,['vine'],'Slide the fork under the vine in front of the tree and lift it ▲ so it falls to the mat.','Come from the south facing north. Lower the fork far enough back that it does not hit the tree trunk.'],
+ [9,'m09','Research Platform','L',30,['platform','camera','s4'],'Raise the research platform ▲, deploy the camera trap ▼, and knock the seed off the tree.','Three jobs at one tree. Plan an order that keeps the fork clear of the trunk, and don’t touch the spider habitat just to the east.'],
+ [10,'m10','Fragile Microhabitats','L',20,['spider','snail'],'Drive through both photo rings, one beside each habitat, without moving either habitat.','Pure navigation. Plan a path, run it, and check the trail the robot leaves behind.'],
+ [11,'m11','Window to the Past','R',20,['cover'],'Lower the fork onto the root cover ▼ so it folds down to the mat.','Come from the south facing north. Stop with the fork over the cover, not over the tree behind it, then lower.'],
+ [12,'m12','Forest Elder','R',30,['cane','tie'],'Lift the cane ▲, then carry the red support tie to the post and set it down.','Both are by the east wall. The post is just south of the tie, so after lifting the tie a short drive backward may be all you need.'],
+ [13,'m13','Keystone Species','L',30,['crate'],'Carry your keystone species to the restoration platform and set it down.','The robot starts holding the keystone species on its fork. Lower the fork only when the crate is over the dashed platform circle. Use the Docks button to practise each dock.'],
+ [14,'m14','Seeds of Renewal','L',20,['s1','s2','s3','s4'],'Get two seeds into the replantation station and set them down on the mat.','The seeds from Exploding Seeds are already on the mat. Pick one up with the fork, carry it to the station, lower the fork, and go back for another.'],
+ [15,'m15','Biocentric Architecture','R',40,['canopy','hatch','sky'],'Raise the nesting canopy ▲, open the compost hatch ▼ and push the garden skylight knob in, plus the bonus for this dock.','Where the building sits depends on the dock. Use the Docks button to practise all three.']
+];
 const LEVELS=[
  {id:'roll',name:'First Roll',w:160,h:90,par:2,start:{x:22,y:45,d:0,arm:90},
   goal:'Drive forward and stop on the glowing pad.',
@@ -330,13 +455,13 @@ const LEVELS=[
   starter:()=>[mk('mv_steer',{STEER:-30,AMOUNT:20})]},
  {id:'fork',name:'Fork Lift',w:160,h:90,par:5,start:{x:20,y:45,d:0,arm:0},
   goal:'Slide the fork under the firefly crate, lift it, and set it down in the blue nest.',
-  hint:'The fork starts down. Drive until the prongs are under the crate, run motor C clockwise 90 degrees to lift, drive to the nest, then run C counterclockwise to set it down.',
+  hint:'The fork starts down. Drive until the prongs are under the crate, run the fork motor 90 degrees to lift, drive to the nest, then run it 90 degrees the other way to set it down.',
   build:()=>({zones:[{x:126,y:45,r:12,color:'blue',label:'NEST'}],objs:[{type:'pod',lift:true,x:70,y:45,r:3}]}),
   missions:()=>[{label:'Lift the crate',done:W.lifted},{label:'Crate set down in the nest',done:!W.objs[0].car&&Math.hypot(W.objs[0].x-126,W.objs[0].y-45)<=10}],
   starter:()=>[mk('mv_move',{AMOUNT:10}),mk('mt_run_for',{AMOUNT:90})]},
  {id:'line',name:'Line Stopper',w:160,h:90,par:5,start:{x:20,y:45,d:0,arm:90},
   goal:'Stop with the color sensor on the black line. The line moves every time, so measuring will not work!',
-  hint:'Use “start moving”, then “wait until E is color black”, then “stop moving”.',
+  hint:'Use “start moving”, then “wait until (color sensor) is color black”, then “stop moving”.',
   build:()=>{ const x=82+Math.round(Math.random()*50); return {lines:[{pts:[[x,8],[x,82]],w:3}]}; },
   missions:()=>[{label:'Sensor is on the black line',done:sense().c==='black'},{label:'No bumps',done:W.bumps===0}],
   starter:()=>[mk('mv_start_steer')]},
@@ -365,11 +490,45 @@ const LEVELS=[
   build:()=>({homes:[{cx:0,cy:100,r:48.5,c:'red',col:'#C7362F',a0:-Math.PI/2,a1:0}],gates:[{x:120,y:30,r:10}]}),
   missions:()=>[{label:'Pass through the ring',done:W.gates[0].hit},{label:'Whole robot back inside the launch area',done:W.gates[0].hit&&allInHome()},{label:'No bumps',done:W.bumps===0}],
   starter:()=>[mk('my_turn',{DEG:20},{DIR:'left'}),mk('mv_move',{AMOUNT:40})]},
+ ...MC.map(c=>({id:c[1],name:c[2],mission:c[0],w:236,h:114,drag:true,goalPts:c[4],own:c[5],task:c[6],
+   start:c[3]==='L'?{x:34,y:98,d:0,arm:90}:{x:200,y:96,d:180,arm:90},
+   goal:c[6]+' ★ Do the mission. ★★ Also a clean run: no bumps and nothing else on the field moved. ★★★ Also finish with the whole robot back inside a launch area. Three-star runs post a time to the leaderboard.',
+   hint:c[7]+' Drag the robot to place it in either launch area; tap it to turn it.',
+   build:chalBuild,missions:chalMissions,tick:matchTick,paint:matchPaint,starter:()=>[]})),
  {id:'match',name:'Match Day',w:236,h:114,match:true,drag:true,clock:150,start:{x:34,y:98,d:0,arm:90},
   goal:'The BIOGLOW robot game. All 15 missions sit where the official field map puts them and score the official points. You get 2:30 of run time and can launch from either launch area as often as you like. Drag the robot to place it, tap it to turn it.',
   hint:'▲ means slide the fork underneath and lift. ▼ means hold the fork above and lower it. Round knobs on dashed tracks get pushed to the end stop. Things with loops (leaves, seeds, the keystone crate, the support tie) ride on the fork. The mat reads green to the sensor, rivers read blue, the black lines have white edges, and the bare table beside the mat reads black. The Docks button changes which of missions 13, 14 and 15 sits on the mine, city and farm docks.',
   build:matchBuild,missions:matchMissions,tick:matchTick,paint:matchPaint,starter:()=>[]}
 ];
+/* ----- mission challenges ----- */
+const NAMES={wall:'the wall',stalk:'the seed stalk',drone:'the drone',map:'the LiDAR map',trig:'the seed trigger',s1:'a seed',s2:'a seed',s3:'a seed',s4:'the tree seed',rock:'the rock',leafA:'a leaf',leafB:'a leaf',katy:'the katydid',
+  root:'the root',ant:'the ant',fungus:'the mycelium',vine:'the vine',platform:'the research tree',camera:'the camera trap',spider:'the spider habitat',snail:'the snail habitat',cover:'the root window',cane:'the cane',tie:'the support tie',crate:'the keystone',canopy:'the building',hatch:'the compost hatch',sky:'the skylight'};
+function chalBuild(){
+  const d=matchBuild(), n=L.mission, crate=d.objs.find(o=>o.id==='crate');
+  if(n!==13){ crate.ghost=true; crate.x=crate.y=-99; }
+  if(n===14) [['s1',92,47],['s2',97,66],['s3',86,78]].forEach(a=>{ const o=d.objs.find(q=>q.id===a[0]); o.held=false; o.x=a[1]; o.y=a[2]; });
+  if(n===10) d.gates=[{x:108,y:20,r:7},{x:139,y:44,r:7}];
+  return d;
+}
+function disturbed(){ const own=L.own||[], out=[];
+  for(const o of W.objs) if(!o.ghost&&own.indexOf(o.id)<0&&moved(o)>1) out.push(NAMES[o.id]||o.id);
+  for(const f of W.fix) if(own.indexOf(f.id)<0&&(f.done||f.stage>0)) out.push(NAMES[f.id]||f.id);
+  return out.filter((v,i)=>out.indexOf(v)===i);
+}
+function fullyHome(){ if(!W.homes) return false; const c=[[BODY.x0,BODY.y0],[BODY.x0,BODY.y1],[BODY.x1,BODY.y0],[BODY.x1,BODY.y1]].map(p=>toWorld(p[0],p[1]));
+  return W.homes.some(h=>c.every(q=>Math.hypot(q[0]-h.cx,q[1]-h.cy)<=h.r)); }
+function chalState(){
+  const n=L.mission, m=matchMissions()[n+1], mv=disturbed();
+  const scored=n===10?(W.gates.every(g=>g.hit)&&m.pts>=20):m.pts>=L.goalPts;
+  const what=[W.bumps?W.bumps+(W.bumps>1?' bumps':' bump')+(W.bumpWhat?', last into '+(NAMES[W.bumpWhat]||W.bumpWhat):''):'',mv.length?'moved '+mv.join(', '):''].filter(Boolean).join('; ');
+  return {m,scored,clean:W.bumps===0&&!mv.length,home:fullyHome(),what};
+}
+function chalMissions(){
+  const c=chalState(), first=L.mission===10?{label:L.task,done:c.scored}:{label:L.task,pts:c.m.pts,max:L.goalPts};
+  return [first,
+    {label:'Clean run: no bumps, nothing else on the field moved',how:W.launched?c.what:'',done:W.launched&&c.clean},
+    {label:'Finish with the whole robot inside a launch area',done:W.launched&&c.home}];
+}
 /* ----- Match Day: the BIOGLOW field. Positions are measured from the field map in the official Robot Game Rulebook (table coordinates in cm; the mat is 202 cm wide and starts 17 cm from the left wall). ----- */
 const DOCKS={mine:{x:208,y:12,f:[-.7071,.7071],need:'canopy'},city:{x:147,y:105,f:[0,-1],need:'sky'},farm:{x:118,y:52,f:[-1,0],need:'hatch'}};
 const ORDERS=[['15','14','13'],['15','13','14'],['13','15','14'],['13','14','15'],['14','15','13'],['14','13','15']]; /* mine, city, farm */
@@ -377,9 +536,9 @@ const NEST={x:24,y:7,w:24,h:10}, HABITAT={x:19,y:2,w:34,h:23}, POST={x:204,y:54}
 function matchBuild(){
   const ord=ORDERS[store.docks||0], at={}; ['mine','city','farm'].forEach((n,i)=>{ at[ord[i]]=Object.assign({name:n},DOCKS[n]); });
   const b=at['15'], p=[-b.f[1],b.f[0]], P=(fd,lat)=>[b.x+b.f[0]*fd+p[0]*lat,b.y+b.f[1]*fd+p[1]*lat];
-  const can=P(13,-9), hat=P(13,0), s0=P(20,9), s1=P(10,9), rail=(x0,y0,x1,y1)=>({x0,y0,x1,y1});
+  const can=P(12,-8), hat=P(14,0), s0=P(15,6), s1=P(8,6), rail=(x0,y0,x1,y1)=>({x0,y0,x1,y1});
   const slots=[29,36,43], kp=Math.floor(Math.random()*3), lx=slots.filter((v,i)=>i!==kp);
-  const tag=(d,t)=>({x:clamp(d.x+9,4,232),y:clamp(d.y-8,4,110),t});
+  const tag=(d,t)=>{ const o=d.name==='farm'?[-8,-12]:[9,-8]; return {x:clamp(d.x+o[0],4,232),y:clamp(d.y+o[1],4,110),t}; };
   return {
    mat:{x:17,w:202},docks:at,
    homes:[{cx:17,cy:114,r:48.5,c:'red',col:'#C7362F',a0:-Math.PI/2,a1:0},{cx:219,cy:114,r:48.5,c:'blue',col:'#2A6FC9',a0:Math.PI,a1:Math.PI*1.5}],
@@ -388,13 +547,13 @@ function matchBuild(){
      {w:4.5,pts:[[130,46],[154,46],[174,44],[184,32],[186,15],[195,0]]},{w:3.5,pts:[[174,44],[192,40],[207,33],[219,22]]}],
    paints:[{x:89,y:38,w:34,h:30,color:'yellow',paint:'#D9B77E'},{x:122,y:86,w:38,h:28,color:'white',paint:'#B4B8B8'},{x:176,y:52,w:19,h:14,color:'white',paint:'#B4B8B8'},{x:196,y:3,w:22,h:17,color:'yellow',paint:'#D98A3D'}],
    zones:[Object.assign({outline:true},NEST),{x:115,y:86,w:12,h:12,outline:true,label:'SURVEY'},{x:at['13'].x,y:at['13'].y,r:7,outline:true,label:'PLATFORM'},{x:at['14'].x,y:at['14'].y,r:8,outline:true,label:'REPLANT'},{x:POST.x,y:POST.y,r:4,outline:true,label:'POST'}],
-   rocks:[{x:79,y:60,r:4,col:'#6FA24A'}],
+   rocks:[{id:'stalk',x:79,y:60,r:4,col:'#6FA24A'}],
    objs:[
     {id:'root',type:'knob',col:'#8A5A2B',x:58,y:13,r:3,rail:rail(58,13,58,5)},
-    {id:'ant',type:'knob',col:'#C7362F',x:146,y:11,r:3,rail:rail(146,11,157,11)},
-    {id:'trig',type:'knob',col:'#B7D94A',x:64,y:60,r:2.5,rail:rail(64,60,73,60)},
+    {id:'ant',type:'knob',col:'#C7362F',x:144,y:11,r:3,rail:rail(144,11,155,11)},
+    {id:'trig',type:'knob',col:'#B7D94A',x:62,y:60,r:2.5,rail:rail(62,60,71,60)},
     {id:'sky',type:'knob',col:'#E0483F',x:s0[0],y:s0[1],r:2.5,rail:rail(s0[0],s0[1],s1[0],s1[1])},
-    {id:'s1',type:'seed',lift:true,held:true,x:82,y:56,r:2.2},{id:'s2',type:'seed',lift:true,held:true,x:84,y:61,r:2.2},{id:'s3',type:'seed',lift:true,held:true,x:81,y:65,r:2.2},
+    {id:'s1',type:'seed',lift:true,held:true,x:85,y:53,r:2.2},{id:'s2',type:'seed',lift:true,held:true,x:87,y:60,r:2.2},{id:'s3',type:'seed',lift:true,held:true,x:84,y:67,r:2.2},
     {id:'s4',type:'seed',lift:true,x:82.5,y:8,r:2.2},
     {id:'leafA',type:'leaf',lift:true,x:lx[0],y:12,r:2.2},{id:'katy',type:'katy',lift:true,x:slots[kp],y:12,r:2.2},{id:'leafB',type:'leaf',lift:true,x:lx[1],y:12,r:2.2},
     {id:'crate',type:'pod',lift:true,x:56,y:100,r:3},
@@ -404,11 +563,11 @@ function matchBuild(){
     {id:'drone',kind:'press',x:131,y:97,bx:131,by:108,br:4,art:'pad'},{id:'map',kind:'lift',x:121,y:92},
     {id:'rock',kind:'flip',x:23,y:56,bx:23,by:46,br:4.5,art:'rock'},
     {id:'fungus',kind:'lift',x:180,y:19,bx:180,by:6,br:5,art:'box'},
-    {id:'platform',kind:'lift',x:76,y:22,bx:74,by:10,br:5.5,art:'tree'},{id:'camera',kind:'press',x:84,y:16},{id:'vine',kind:'lift',x:66,y:16},
+    {id:'platform',kind:'lift',x:78,y:18.8,bx:74,by:10,br:5.5,art:'tree'},{id:'camera',kind:'press',x:84,y:16},{id:'vine',kind:'lift',x:66,y:20},
     {id:'cover',kind:'press',x:158,y:65,bx:158,by:53,br:5,art:'tree'},
     {id:'cane',kind:'lift',x:218,y:42,bx:218,by:30,br:4.5,art:'tree'},
     {id:'canopy',kind:'lift',x:can[0],y:can[1],bx:b.x,by:b.y,br:6,art:'box'},{id:'hatch',kind:'press',x:hat[0],y:hat[1]}],
-   tags:[{x:105,y:103,t:'1'},{x:79,y:51,t:'2'},{x:31,y:47,t:'3'},{x:21,y:5,t:'4'},{x:51,y:5,t:'5'},{x:151,y:20,t:'6'},{x:189,y:5,t:'7'},{x:61,y:20,t:'8'},{x:89,y:21,t:'9'},{x:98,y:7,t:'10'},{x:130,y:35,t:'10'},{x:167,y:47,t:'11'},{x:227,y:30,t:'12'},
+   tags:[{x:105,y:103,t:'1'},{x:79,y:51,t:'2'},{x:31,y:47,t:'3'},{x:21,y:5,t:'4'},{x:51,y:5,t:'5'},{x:143,y:19,t:'6'},{x:189,y:5,t:'7'},{x:60,y:26,t:'8'},{x:95,y:19,t:'9'},{x:98,y:7,t:'10'},{x:130,y:35,t:'10'},{x:167,y:47,t:'11'},{x:227,y:30,t:'12'},
      tag(at['13'],'13'),tag(at['14'],'14'),tag(at['15'],'15')]
   };
 }
@@ -470,15 +629,16 @@ function resetWorld(){
      tokens:6,launched:false,katyOut:false,antPeak:0,id:{}};
   for(const o of W.objs) if(o.id) W.id[o.id]=o;
   for(const f of W.fix) if(f.id) W.id[f.id]=f;
-  W.fixed=W.rocks.map(r=>({x:r.x,y:r.y,r:r.r})).concat(W.fix.filter(f=>f.br).map(f=>({x:f.bx,y:f.by,r:f.br})));
+  W.fixed=W.rocks.map(r=>({x:r.x,y:r.y,r:r.r,own:r.id})).concat(W.fix.filter(f=>f.br).map(f=>({x:f.bx,y:f.by,r:f.br,own:f.id})));
   placeRobot(); hideBanner();
 }
 function homeOK(x,y){ return !!W.homes&&W.homes.some(h=>Math.hypot(x-h.cx,y-h.cy)<=h.r-11.4)&&x>=13&&x<=L.w-13&&y<=L.h-13; }
 function inHome(x,y){ return !W.mat||x<W.mat.x||x>W.mat.x+W.mat.w||W.homes.some(h=>Math.hypot(x-h.cx,y-h.cy)<=h.r); }
 function placeRobot(){
-  let s=L.start; if(L.drag&&store.place&&W&&homeOK(store.place.x,store.place.y)) s=store.place;
-  R={x:s.x,y:s.y,th:s.d*RAD,th0:s.d*RAD,wl:0,wr:0,arm:L.start.arm,armRate:0,moveSpeed:50,armSpeed:75,rotCm:17.5,slipL:1,slipR:1};
-  if(W){ W.trail=[]; for(const o of W.objs) o.car=false; }
+  let s=L.start; const pl=L.drag&&((store.places||{})[L.id]||(L.match?store.place:null)); if(pl&&W&&homeOK(pl.x,pl.y)) s=pl;
+  R={x:s.x,y:s.y,th:s.d*RAD,th0:s.d*RAD,wl:0,wr:0,degL:0,degR:0,pair:CFG.drive,arm:L.start.arm,armRate:0,moveSpeed:50,armSpeed:75,rotCm:17.5,slipL:1,slipR:1};
+  if(W){ W.trail=[]; for(const o of W.objs) o.car=false;
+    if(L.mission===13&&W.id.crate){ const k=W.id.crate, q=toWorld(16.5,0); k.car=true; k.cl=[7,0]; k.x=q[0]; k.y=q[1]; } }
 }
 const toLocal=(px,py)=>{ const dx=px-R.x,dy=py-R.y,c=Math.cos(R.th),s=Math.sin(R.th); return [dx*c+dy*s,-dx*s+dy*c]; };
 const toWorld=(lx,ly)=>{ const c=Math.cos(R.th),s=Math.sin(R.th); return [R.x+lx*c-ly*s,R.y+lx*s+ly*c]; };
@@ -520,32 +680,33 @@ function constrain(o){
   if(o.rail){ const a=o.rail,dx=a.x1-a.x0,dy=a.y1-a.y0,t=clamp(((o.x-a.x0)*dx+(o.y-a.y0)*dy)/(dx*dx+dy*dy),0,1); o.x=a.x0+t*dx; o.y=a.y0+t*dy; return; }
   o.x=clamp(o.x,o.r,L.w-o.r); o.y=clamp(o.y,o.r,L.h-o.r);
   for(const f of W.fixed) sep(o,f,false);
-  for(const p of W.objs){ if(p===o||p.car||p.held||p.rail) continue; sep(o,p,true); }
+  for(const p of W.objs){ if(p===o||p.car||p.held||p.rail||p.ghost) continue; sep(o,p,true); }
 }
 function blocked(){
   const len=FORK_LEN*Math.cos(R.arm*RAD), fork={x0:9.5,x1:9.5+len,y0:-FORK_HALF,y1:FORK_HALF}, down=R.arm<25&&len>.5;
   const c=Math.cos(R.th),s=Math.sin(R.th);
   const pts=[[BODY.x0,BODY.y0],[BODY.x0,BODY.y1],[BODY.x1,BODY.y0],[BODY.x1,BODY.y1]];
   if(len>.5) pts.push([fork.x1,fork.y0],[fork.x1,fork.y1]);
-  for(const p of pts){ const x=R.x+p[0]*c-p[1]*s,y=R.y+p[0]*s+p[1]*c; if(x<0||y<0||x>L.w||y>L.h) return true; }
-  for(const f of W.fixed){ const l=toLocal(f.x,f.y); if(pushOut(l[0],l[1],f.r,BODY)) return true; if(down&&pushOut(l[0],l[1],f.r,fork)) return true; }
-  for(const o of W.objs){ if(o.car||o.held) continue;
+  for(const p of pts){ const x=R.x+p[0]*c-p[1]*s,y=R.y+p[0]*s+p[1]*c; if(x<0||y<0||x>L.w||y>L.h){ W.hitBy='wall'; return true; } }
+  for(const f of W.fixed){ const l=toLocal(f.x,f.y); if(pushOut(l[0],l[1],f.r,BODY)||(down&&pushOut(l[0],l[1],f.r,fork))){ W.hitBy=f.own; return true; } }
+  for(const o of W.objs){ if(o.car||o.held||o.ghost) continue;
     for(let pass=0;pass<2;pass++){
       const l=toLocal(o.x,o.y); let pv=pushOut(l[0],l[1],o.r,BODY);
       if(!pv&&down&&!o.lift) pv=pushOut(l[0],l[1],o.r,fork);
       if(!pv) break;
-      if(pass===1){ if(Math.hypot(pv[0],pv[1])>.12) return true; break; }
+      if(pass===1){ if(Math.hypot(pv[0],pv[1])>.12){ W.hitBy=o.id; return true; } break; }
       o.x+=pv[0]*c-pv[1]*s; o.y+=pv[0]*s+pv[1]*c; constrain(o);
     } }
   return false;
 }
 const inFork=(x,y)=>{ const l=toLocal(x,y); return l[0]>=9.5&&l[0]<=22.5&&Math.abs(l[1])<=4.4; };
 function physics(dt){
+  R.degL+=R.wl*dt; R.degR+=R.wr*dt; if(W.mot) for(const q in W.mot) W.mot[q].pos+=W.mot[q].rate*dt;
   if(R.wl||R.wr){
     const px=R.x,py=R.y,pt=R.th;
     const vl=R.wl/360*WHEEL_CM*R.slipL, vr=R.wr/360*WHEEL_CM*R.slipR, v=(vl+vr)/2, om=(vl-vr)/TRACK;
     R.th+=om*dt; R.x+=v*Math.cos(R.th)*dt; R.y+=v*Math.sin(R.th)*dt;
-    if(blocked()){ R.x=px;R.y=py;R.th=pt; if(!W.wasBump){ W.bumps++; W.bumpFlash=.35; } W.wasBump=true; } else W.wasBump=false;
+    if(blocked()){ R.x=px;R.y=py;R.th=pt; W.pressT=W.t; if(!W.wasBump&&!(L.own&&L.own.indexOf(W.hitBy)>=0)){ W.bumps++; W.bumpFlash=.35; W.bumpWhat=W.hitBy; } W.wasBump=true; } else W.wasBump=false;
     const tr=W.trail, last=tr[tr.length-1];
     if(!last||Math.hypot(last[0]-R.x,last[1]-R.y)>1.5){ tr.push([R.x,R.y]); if(tr.length>1500) tr.shift(); }
   }
@@ -553,7 +714,7 @@ function physics(dt){
     const a0=R.arm; R.arm=clamp(a0+R.armRate*dt,0,90);
     if(R.arm<a0&&blocked()) R.arm=a0;
     if(a0<22&&R.arm>=22){
-      for(const o of W.objs) if(o.lift&&!o.car&&!o.held&&inFork(o.x,o.y)){ const l=toLocal(o.x,o.y); o.car=true; o.cl=[l[0]-9.5,l[1]]; o.vx=o.vy=0; W.lifted=true; }
+      for(const o of W.objs) if(o.lift&&!o.car&&!o.held&&!o.ghost&&inFork(o.x,o.y)){ const l=toLocal(o.x,o.y); o.car=true; o.cl=[l[0]-9.5,l[1]]; o.vx=o.vy=0; W.lifted=true; }
       for(const f of W.fix) if(inFork(f.x,f.y)){ if(f.kind==='lift'&&!f.done){ f.done=true; burst(f.x,f.y,14); } else if(f.kind==='flip'&&f.stage===0){ f.stage=1; burst(f.x,f.y,14); } }
     }
     if(a0>12&&R.arm<=12){
@@ -570,7 +731,7 @@ function physics(dt){
 }
 
 /* ---------------- program runner ---------------- */
-const STOP={};
+const STOP={}, STOP_THIS={}; let curThread=null, callDepth=0;
 let ws, running=false, threads=[], speed=1, acc=0, curBlock=null, shownBlock=null, driveTok=0, armTok=0, audio=null;
 const num=(b,n)=>{ const v=Number(ev(b.getInputTargetBlock(n))); return isFinite(v)?v:0; };
 const bool=(b,n)=>!!ev(b.getInputTargetBlock(n));
@@ -580,14 +741,37 @@ function ev(b){
   switch(b.type){
     case 'math_number': return Number(f('NUM'));
     case 'text': return f('TEXT');
-    case 'sn_is_color': return sense().c===f('COLOR');
-    case 'sn_reflect': return sense().r;
-    case 'sn_reflect_cmp': { const r=sense().r,v=num(b,'VAL'),o=f('OP'); return o==='<'?r<v:o==='>'?r>v:r===v; }
-    case 'mt_pos': return Math.round(R.arm);
+    case 'sn_is_color': return sensePort(f('PORT')).c===f('COLOR');
+    case 'sn_reflect': return sensePort(f('PORT')).r;
+    case 'sn_reflect_cmp': { const r=sensePort(f('PORT')).r,v=num(b,'VAL'),o=f('OP'); return o==='<'?r<v:o==='>'?r>v:r===v; }
+    case 'mt_pos': { const v=motPos(f('PORT')); return kindOf(f('PORT'))==='fork'?Math.round(v):Math.round(((v%360)+540)%360-180); }
     case 'sn_yaw': return yaw();
     case 'sn_timer': return Math.round((W.t-W.timer0)*100)/100;
     case 'op_arith': { const a=num(b,'A'),c=num(b,'B'),o=f('OP'); return o==='+'?a+c:o==='-'?a-c:o==='*'?a*c:(c?a/c:0); }
-    case 'op_cmp': { const a=num(b,'A'),c=num(b,'B'),o=f('OP'); return o==='<'?a<c:o==='>'?a>c:a===c; }
+    case 'op_cmp': { const A=ev(b.getInputTargetBlock('A')),B=ev(b.getInputTargetBlock('B')),o=f('OP'), na=Number(A), nb=Number(B), numeric=String(A).trim()!==''&&String(B).trim()!==''&&isFinite(na)&&isFinite(nb);
+      if(numeric) return o==='<'?na<nb:o==='>'?na>nb:na===nb; const sa=String(A).toLowerCase(), sb=String(B).toLowerCase(); return o==='<'?sa<sb:o==='>'?sa>sb:sa===sb; }
+    case 'op_between': { const v=num(b,'V'),lo=num(b,'LO'),hi=num(b,'HI'); return v>=Math.min(lo,hi)&&v<=Math.max(lo,hi); }
+    case 'op_mod': { const a=num(b,'A'),c=num(b,'B'); return c?((a%c)+c)%c:0; }
+    case 'op_round': return Math.round(num(b,'A'));
+    case 'op_math': { const a=num(b,'A'); switch(f('OP')){ case 'abs': return Math.abs(a); case 'floor': return Math.floor(a); case 'ceil': return Math.ceil(a); case 'sqrt': return Math.sqrt(a);
+      case 'sin': return Math.round(Math.sin(a*RAD)*1e10)/1e10; case 'cos': return Math.round(Math.cos(a*RAD)*1e10)/1e10; case 'tan': return Math.tan(a*RAD); case 'asin': return Math.asin(a)/RAD; case 'acos': return Math.acos(a)/RAD; case 'atan': return Math.atan(a)/RAD;
+      case 'ln': return Math.log(a); case 'log': return Math.log10(a); case 'exp': return Math.exp(a); case 'pow10': return Math.pow(10,a); } return 0; }
+    case 'op_join': return String(ev(b.getInputTargetBlock('A')))+String(ev(b.getInputTargetBlock('B')));
+    case 'op_length': return String(ev(b.getInputTargetBlock('A'))).length;
+    case 'op_contains': return String(ev(b.getInputTargetBlock('A'))).toLowerCase().indexOf(String(ev(b.getInputTargetBlock('B'))).toLowerCase())>=0;
+    case 'sn_color': return sensePort(f('PORT')).c;
+    case 'sn_force_is': { const on=forceOn(f('PORT')); return f('EV')==='released'?!on:on; }
+    case 'sn_force': return forceOn(f('PORT'))?(f('UNIT')==='n'?10:100):0;
+    case 'sn_dist_is': { const d=distIn(f('PORT'),f('UNIT')), v=num(b,'VAL'), o=f('OP'); if(d<0) return o==='>'; return o==='<'?d<v:o==='>'?d>v:Math.abs(d-v)<1; }
+    case 'sn_dist': return distIn(f('PORT'),f('UNIT'));
+    case 'sn_tilted': case 'sn_gesture': return false;
+    case 'sn_orient': return f('FACE')==='top';
+    case 'sd_volume': return W.vol;
+    case 'op_letter': return String(ev(b.getInputTargetBlock('S'))).charAt(Math.round(num(b,'N'))-1);
+    case 'sn_button': { const on=(W.btnDown[f('BTN')]||0)>W.t; return f('EV')==='released'?!on:on; }
+    case 'sn_axis': return f('AX')==='yaw'?yaw():0;
+    case 'mt_speed_r': return Math.round(motRate(f('PORT')));
+    case 'mt_rel': return Math.round(motPos(f('PORT'))-(W.motZero[f('PORT')]||0));
     case 'op_logic': return f('OP')==='and'?(bool(b,'A')&&bool(b,'B')):(bool(b,'A')||bool(b,'B'));
     case 'op_not': return !bool(b,'A');
     case 'op_random': { const a=num(b,'A'),c=num(b,'B'),lo=Math.min(a,c),hi=Math.max(a,c); return Math.floor(lo+Math.random()*(hi-lo+1)); }
@@ -600,50 +784,94 @@ function toDeg(amt,unit){ return unit==='degrees'?amt:unit==='rotations'?amt*360
 function* driveFor(l,r,amt,unit){
   if(amt<0){ l=-l;r=-r;amt=-amt; }
   const my=++driveTok;
-  if(unit==='seconds'){ R.wl=l;R.wr=r; const t0=W.t; while(W.t-t0<amt-1e-9&&driveTok===my) yield; }
+  if(unit==='seconds'){ setDrive(l,r); const t0=W.t; while(W.t-t0<amt-1e-9&&driveTok===my) yield; }
   else{ const deg=toDeg(amt,unit), m=Math.max(Math.abs(l),Math.abs(r)); let p=0;
-    while(m>1e-6&&driveTok===my){ const rem=deg-p; if(rem<=1e-6) break; const k=Math.min(1,rem/(m*DT)); R.wl=l*k;R.wr=r*k; yield; p+=m*k*DT; } }
+    while(m>1e-6&&driveTok===my){ const rem=deg-p; if(rem<=1e-6) break; const k=Math.min(1,rem/(m*DT)); setDrive(l*k,r*k); yield; p+=m*k*DT; } }
   if(driveTok===my){ R.wl=0;R.wr=0; }
 }
-function* armFor(dir,amt,unit){
+function* armFor(dir,amt,unit,spd){
   if(amt<0){ dir=-dir;amt=-amt; }
-  const my=++armTok, rate=R.armSpeed/100*ARM_DPS*dir; R.armRate=rate;
+  const my=++armTok, rate=(spd===undefined?R.armSpeed:spd)/100*ARM_DPS*dir; R.armRate=rate;
   if(unit==='seconds'){ const t0=W.t; while(W.t-t0<amt-1e-9&&armTok===my) yield; }
   else{ const deg=unit==='rotations'?amt*360:amt, m=Math.abs(rate); let p=0;
     while(m>1e-6&&armTok===my){ const rem=deg-p; if(rem<=1e-6) break; const k=Math.min(1,rem/(m*DT)); R.armRate=rate*k; yield; p+=m*k*DT; } }
   if(armTok===my) R.armRate=0;
 }
-function* armTo(target){
-  const my=++armTok; R.armRate=R.armSpeed/100*ARM_DPS*(target>R.arm?1:-1); const t0=W.t;
-  while(armTok===my&&Math.abs(R.arm-target)>.01&&W.t-t0<3) yield;
+function* armTo(target,spd){
+  target=clamp(target,0,90); const my=++armTok, v=Math.max(1,Math.abs(spd===undefined?R.armSpeed:spd)); R.armRate=v/100*ARM_DPS*(target>R.arm?1:-1); const t0=W.t;
+  while(armTok===my&&Math.abs(R.arm-target)>.01&&W.t-t0<6) yield;
   if(armTok===my) R.armRate=0;
 }
-function beep(){ try{ audio=audio||new (window.AudioContext||window.webkitAudioContext)(); const o=audio.createOscillator(),g=audio.createGain(); o.frequency.value=880; g.gain.value=.06; o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime+.15); }catch(e){} }
+/* motors: the fork port moves the fork, the drive ports turn one wheel, any other port is a motor with nothing attached */
+const MOTOR_DPS=1000;
+function kindOf(p){ return p===CFG.fork?'fork':p===CFG.drive[0]?'left':p===CFG.drive[1]?'right':'virtual'; }
+function vm(p){ W.mot=W.mot||{}; return W.mot[p]||(W.mot[p]={pos:0,rate:0,speed:75,tok:0}); }
+function motSpeed(p){ return kindOf(p)==='fork'?R.armSpeed:vm(p).speed; }
+function setMotSpeed(p,v){ if(kindOf(p)==='fork') R.armSpeed=v; else vm(p).speed=v; }
+function motPos(p){ const k=kindOf(p); return k==='fork'?R.arm*UPS():k==='left'?-R.degL:k==='right'?R.degR:vm(p).pos; }
+function motRate(p){ const k=kindOf(p); return k==='fork'?R.armRate*UPS()/ARM_DPS*100:k==='left'?-R.wl/MAX_DPS*100:k==='right'?R.wr/MAX_DPS*100:vm(p).rate/MOTOR_DPS*100; }
+function motorStart(p,pct){ const k=kindOf(p), f=pct/100;
+  if(k==='fork'){ armTok++; R.armRate=f*ARM_DPS*UPS(); } else if(k==='left'){ driveTok++; R.wl=-f*MAX_DPS; } else if(k==='right'){ driveTok++; R.wr=f*MAX_DPS; } else { const m=vm(p); m.tok++; m.rate=f*MOTOR_DPS; } }
+function* motorFor(p,dirCW,amt,unit,spd){
+  const k=kindOf(p), sp=Math.abs(spd===undefined?motSpeed(p):spd);
+  if(k==='fork'){ yield* armFor(dirCW*UPS(),amt,unit,sp); return; }
+  if(amt<0){ dirCW=-dirCW; amt=-amt; }
+  const rate=sp/100*(k==='virtual'?MOTOR_DPS:MAX_DPS)*dirCW, deg=unit==='rotations'?amt*360:amt;
+  const set=v=>{ if(k==='left') R.wl=-v; else if(k==='right') R.wr=v; else vm(p).rate=v; };
+  const my=k==='virtual'?++vm(p).tok:++driveTok, alive=()=>k==='virtual'?vm(p).tok===my:driveTok===my;
+  if(unit==='seconds'){ set(rate); const t0=W.t; while(W.t-t0<amt-1e-9&&alive()) yield; }
+  else{ const m=Math.abs(rate); let done=0; while(m>1e-6&&alive()){ const rem=deg-done; if(rem<=1e-6) break; const q=Math.min(1,rem/(m*DT)); set(rate*q); yield; done+=m*q*DT; } }
+  if(alive()) set(0);
+}
+function* motorTo(p,pos,spd){ if(kindOf(p)==='fork'){ yield* armTo(pos*UPS(),spd); return; } const d=pos-motPos(p); yield* motorFor(p,d<0?-1:1,Math.abs(d),'degrees',spd); }
+/* drive: movement blocks only turn the wheels if the movement motors match the wheel ports */
+function setDrive(l,r){ const pr=R.pair||CFG.drive;
+  if(pr===CFG.drive){ R.wl=l; R.wr=r; return; }
+  if(pr===CFG.drive[1]+CFG.drive[0]){ R.wl=-r; R.wr=-l; return; }
+  R.wl=R.wr=0; if(!W.pairWarned&&(l||r)){ W.pairWarned=true; toast('The movement motors are set to '+pr[0]+'+'+pr[1]+', but the wheels are on '+CFG.drive[0]+'+'+CFG.drive[1]+'. Change the “set movement motors” block or Robot setup.'); } }
+function sensePort(p){ return p===CFG.sensor?sense():{c:'none',r:0}; }
+function distRaw(){ const c=Math.cos(R.th), s=Math.sin(R.th);
+  for(let d=0;d<=200;d+=.5){ const x=R.x+(BODY.x1+d)*c, y=R.y+(BODY.x1+d)*s;
+    if(x<0||y<0||x>L.w||y>L.h) return d;
+    for(const f of W.fixed) if(Math.hypot(x-f.x,y-f.y)<=f.r) return d;
+    for(const o of W.objs) if(!o.ghost&&!o.car&&!o.held&&Math.hypot(x-o.x,y-o.y)<=o.r) return d; }
+  return -1; }
+function distIn(p,unit){ if(!CFG.dist||p!==CFG.dist) return -1; const d=distRaw(); if(d<0) return -1; return unit==='in'?Math.round(d/2.54*10)/10:unit==='%'?Math.min(100,Math.round(d/2)):Math.round(d*10)/10; }
+function forceOn(p){ return !!CFG.force&&p===CFG.force&&W.pressT>W.t-.08; }
+function midi(n){ return 440*Math.pow(2,(clamp(n,24,120)-69)/12); }
+function beep(freq,dur){ try{ audio=audio||new (window.AudioContext||window.webkitAudioContext)(); const o=audio.createOscillator(),g=audio.createGain(); o.frequency.value=freq||880; g.gain.value=.06*((W&&W.vol!==undefined?W.vol:100)/100); o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime+(dur||.15)); }catch(e){} }
 function* stack(b){ while(b){ if(b.isEnabled()){ curBlock=b.id; yield* exec(b); } b=b.getNextBlock(); } }
 function* exec(b){
   const f=n=>b.getFieldValue(n), body=n=>b.getInputTargetBlock(n), sp=()=>R.moveSpeed/100*MAX_DPS;
   switch(b.type){
     case 'mv_move': { const d=f('DIR'),v=sp(); const lr=d==='fwd'?[v,v]:d==='back'?[-v,-v]:d==='left'?[-v,v]:[v,-v]; yield* driveFor(lr[0],lr[1],num(b,'AMOUNT'),f('UNIT')); break; }
     case 'mv_steer': { const lr=steer(num(b,'STEER'),sp()); yield* driveFor(lr[0],lr[1],num(b,'AMOUNT'),f('UNIT')); break; }
-    case 'mv_start_steer': { const lr=steer(num(b,'STEER'),sp()); driveTok++; R.wl=lr[0];R.wr=lr[1]; break; }
+    case 'mv_start_steer': { const lr=steer(num(b,'STEER'),sp()); driveTok++; setDrive(lr[0],lr[1]); break; }
     case 'mv_stop': driveTok++; R.wl=0;R.wr=0; break;
     case 'mv_speed': R.moveSpeed=clamp(num(b,'SPEED'),-100,100); break;
     case 'mv_tank': yield* driveFor(clamp(num(b,'L'),-100,100)/100*MAX_DPS,clamp(num(b,'R'),-100,100)/100*MAX_DPS,num(b,'AMOUNT'),f('UNIT')); break;
-    case 'mv_start_tank': driveTok++; R.wl=clamp(num(b,'L'),-100,100)/100*MAX_DPS; R.wr=clamp(num(b,'R'),-100,100)/100*MAX_DPS; break;
-    case 'mv_motors': break;
-    case 'mt_goto': yield* armTo(clamp(num(b,'POS'),0,90)); break;
+    case 'mv_start_tank': driveTok++; setDrive(clamp(num(b,'L'),-100,100)/100*MAX_DPS,clamp(num(b,'R'),-100,100)/100*MAX_DPS); break;
+    case 'mv_motors': R.pair=f('PAIR'); break;
+    case 'mt_goto': yield* motorTo(f('PORT'),num(b,'POS')); break;
     case 'mv_rotcm': { const v=num(b,'CM'); if(v>0) R.rotCm=v; break; }
-    case 'mt_run_for': yield* armFor(f('DIR')==='cw'?1:-1,num(b,'AMOUNT'),f('UNIT')); break;
-    case 'mt_start': armTok++; R.armRate=R.armSpeed/100*ARM_DPS*(f('DIR')==='cw'?1:-1); break;
-    case 'mt_stop': armTok++; R.armRate=0; break;
-    case 'mt_speed': R.armSpeed=clamp(num(b,'SPEED'),-100,100); break;
+    case 'mt_run_for': yield* motorFor(f('PORT'),f('DIR')==='cw'?1:-1,num(b,'AMOUNT'),f('UNIT')); break;
+    case 'mt_start': motorStart(f('PORT'),(f('DIR')==='cw'?1:-1)*Math.abs(motSpeed(f('PORT')))); break;
+    case 'mt_stop': motorStart(f('PORT'),0); break;
+    case 'mt_speed': setMotSpeed(f('PORT'),clamp(num(b,'SPEED'),-100,100)); break;
     case 'my_fork_up': yield* armTo(90); break;
     case 'my_fork_down': yield* armTo(0); break;
     case 'my_turn': { const want=Math.abs(num(b,'DEG'))*RAD, dir=(f('DIR')==='right'?1:-1)*(num(b,'DEG')<0?-1:1), th0=R.th, t0=W.t, my=++driveTok, v=Math.min(Math.abs(sp()),400);
-      while(driveTok===my&&W.t-t0<8){ const rem=want-Math.abs(R.th-th0); if(rem<=.0015) break; const k=clamp(rem/(25*RAD),.06,1)*v; R.wl=k*dir;R.wr=-k*dir; yield; }
+      while(driveTok===my&&W.t-t0<8){ const rem=want-Math.abs(R.th-th0); if(rem<=.0015) break; const k=clamp(rem/(25*RAD),.06,1)*v; setDrive(k*dir,-k*dir); yield; }
       if(driveTok===my){ R.wl=0;R.wr=0; } break; }
     case 'lt_write': W.display=String(ev(b.getInputTargetBlock('TEXT'))).slice(0,24); break;
-    case 'sd_beep': { beep(); const t0=W.t,d=num(b,'SECS'); while(W.t-t0<d) yield; break; }
+    case 'sd_beep': { const d=num(b,'SECS'); beep(midi(b.getInputTargetBlock('NOTE')?num(b,'NOTE'):60),Math.min(d,2)); const t0=W.t; while(W.t-t0<d) yield; break; }
+    case 'lt_image': W.display=f('IMG'); break;
+    case 'lt_image_for': { W.display=f('IMG'); const t0=W.t,d=num(b,'SECS'); while(W.t-t0<d) yield; W.display=''; break; }
+    case 'lt_bright': case 'lt_pixel': case 'lt_rotate': case 'lt_orient': case 'lt_ultra': case 'sd_effect_change': case 'sd_effect_set': case 'sd_effect_clear': break;
+    case 'sd_play': { beep(660,.12); const t0=W.t; while(W.t-t0<.5) yield; break; }
+    case 'sd_start_sound': beep(660,.12); break;
+    case 'sd_vol_change': W.vol=clamp(W.vol+num(b,'V'),0,100); break;
+    case 'sd_vol_set': W.vol=clamp(num(b,'V'),0,100); break;
     case 'ct_wait': { const t0=W.t,d=num(b,'SECS'); while(W.t-t0<d-1e-9) yield; break; }
     case 'ct_repeat': { const n=Math.round(num(b,'TIMES')); for(let i=0;i<n;i++){ yield* stack(body('DO')); yield; } break; }
     case 'ct_forever': while(true){ yield* stack(body('DO')); yield; }
@@ -652,6 +880,28 @@ function* exec(b){
     case 'ct_wait_until': while(!bool(b,'COND')) yield; break;
     case 'ct_repeat_until': while(!bool(b,'COND')){ yield* stack(body('DO')); yield; } break;
     case 'ct_stop': throw STOP;
+    case 'mv_start_dir': { const d=f('DIR'),v=sp(); const lr=d==='fwd'?[v,v]:d==='back'?[-v,-v]:d==='left'?[-v,v]:[v,-v]; driveTok++; setDrive(lr[0],lr[1]); break; }
+    case 'mv_steer_speed': { const lr=steer(num(b,'STEER'),clamp(num(b,'SPEED'),-100,100)/100*MAX_DPS); yield* driveFor(lr[0],lr[1],num(b,'AMOUNT'),f('UNIT')); break; }
+    case 'mv_start_steer_speed': { const lr=steer(num(b,'STEER'),clamp(num(b,'SPEED'),-100,100)/100*MAX_DPS); driveTok++; setDrive(lr[0],lr[1]); break; }
+    case 'mv_stop_method': case 'mv_accel': case 'sd_stop': break;
+    case 'mt_run_for_speed': { const v=clamp(num(b,'SPEED'),-100,100); yield* motorFor(f('PORT'),v<0?-1:1,num(b,'AMOUNT'),f('UNIT'),Math.abs(v)); break; }
+    case 'mt_start_speed': motorStart(f('PORT'),clamp(num(b,'SPEED'),-100,100)); break;
+    case 'mt_set_rel': W.motZero[f('PORT')]=motPos(f('PORT'))-num(b,'POS'); break;
+    case 'mt_goto_rel': yield* motorTo(f('PORT'),(W.motZero[f('PORT')]||0)+num(b,'POS'),num(b,'SPEED')); break;
+    case 'lt_clear': W.display=''; break;
+    case 'lt_center': W.center=f('C'); break;
+    case 'sd_beep_start': beep(midi(num(b,'NOTE')),.3); break;
+    case 'ev_broadcast': fireMsg(f('MSG')); break;
+    case 'ev_broadcast_wait': { const started=fireMsg(f('MSG')); while(started.some(t=>!t.done)) yield; break; }
+    case 'ct_stop_opt': if(f('OPT')==='all') throw STOP; throw STOP_THIS;
+    case 'ct_stop_other': for(const t of threads) if(t!==curThread) t.done=true; break;
+    case 'procedures_callnoreturn': {
+      const def=Blockly.Procedures.getDefinition(b.getProcedureCall(),ws); if(!def||!def.isEnabled()) break;
+      if(callDepth>60) throw STOP;
+      const models=def.getVarModels?def.getVarModels():[], vals=models.map((m,i)=>ev(b.getInputTargetBlock('ARG'+i)));
+      models.forEach((m,i)=>{ W.vars[m.getId()]=vals[i]; });
+      callDepth++; try{ yield* stack(def.getInputTargetBlock('STACK')); } finally { callDepth--; }
+      break; }
     case 'sn_reset_yaw': R.th0=R.th; break;
     case 'sn_reset_timer': W.timer0=W.t; break;
     case 'variables_set': W.vars[f('VAR')]=ev(b.getInputTargetBlock('VALUE')); break;
@@ -660,26 +910,48 @@ function* exec(b){
 }
 function run(){
   if(running){ finish('user'); return; }
-  const tops=ws.getTopBlocks(true).filter(b=>b.type==='ev_start'&&b.isEnabled());
-  if(!tops.length){ toast('Add a “when program starts” block from Events first.'); return; }
+  const tops=ws.getTopBlocks(true).filter(b=>b.type==='ev_start'&&b.isEnabled()), hats=ws.getTopBlocks(true).filter(b=>HATS.indexOf(b.type)>=0&&b.isEnabled());
+  if(!tops.length&&!hats.length){ toast('Add a “when program starts” block from Events first.'); return; }
   let lost=false;
   if(L.match&&W.clock>0){ if(W.launched&&!inHome(R.x,R.y)&&W.tokens>0){ W.tokens--; lost=true; } placeRobot(); } else resetWorld();
   if(L.sloppy&&!$('jig').checked){ R.x+=(Math.random()-.5)*3; R.y+=(Math.random()-.5)*3; R.th+=(Math.random()-.5)*20*RAD; R.th0=R.th; }
   W.launched=true; hideBanner(); if(lost) toast('Relaunched from outside home: one precision token lost.');
   if($('wobble').checked){ R.slipL=1+(Math.random()-.5)*.05; R.slipR=1+(Math.random()-.5)*.05; }
-  W.timer0=W.t; W.vars={}; W.display='';
-  threads=tops.map(b=>({gen:stack(b.getNextBlock()),done:false}));
+  W.timer0=W.t; W.vars={}; W.display=''; W.center=''; W.btnDown={}; W.btnEdge={}; W.vol=100; W.pairWarned=false; R.pair=CFG.drive; W.mot={}; W.motZero={}; PORT_LIST.forEach(q=>{ W.motZero[q]=motPos(q); });
+  threads=tops.map(b=>({gen:stack(b.getNextBlock()),done:false,hat:b.id}));
+  W.hats=hats.map(b=>({b,prev:true,thread:null}));
   running=true; acc=0; setRunBtn();
   if(window.matchMedia('(max-width:900px)').matches) window.scrollTo({top:0,behavior:'smooth'});
 }
+const HATS=['ev_button','ev_color','ev_timer','ev_cond','ev_receive','ev_force','ev_dist','ev_tilt','ev_orient','ev_gesture'];
+function startHat(h){ if(h.thread&&!h.thread.done) h.thread.done=true; const t={gen:stack(h.b.getNextBlock()),done:false,hat:h.b.id}; h.thread=t; threads.push(t); return t; }
+function fireMsg(msg){ const out=[]; for(const h of W.hats||[]) if(h.b.type==='ev_receive'&&String(h.b.getFieldValue('MSG')).trim().toLowerCase()===String(msg).trim().toLowerCase()) out.push(startHat(h)); return out; }
+function checkHats(){
+  for(const h of W.hats||[]){ const b=h.b; let now=false;
+    try{ switch(b.type){
+      case 'ev_button': now=!!W.btnEdge[b.getFieldValue('BTN')]; break;
+      case 'ev_color': now=sensePort(b.getFieldValue('PORT')).c===b.getFieldValue('COLOR'); break;
+      case 'ev_force': { const on=forceOn(b.getFieldValue('PORT')); now=b.getFieldValue('EV')==='released'?!on:on; break; }
+      case 'ev_dist': { const d=distIn(b.getFieldValue('PORT'),b.getFieldValue('UNIT')), v=num(b,'VAL'), o=b.getFieldValue('OP'); now=d>=0&&(o==='<'?d<v:o==='>'?d>v:Math.abs(d-v)<1); break; }
+      case 'ev_orient': now=b.getFieldValue('FACE')==='top'; break;
+      case 'ev_tilt': case 'ev_gesture': now=false; break;
+      case 'ev_timer': now=(W.t-W.timer0)>num(b,'VAL'); break;
+      case 'ev_cond': now=bool(b,'COND'); break;
+      default: continue; } }catch(e){ now=false; }
+    if(now&&!h.prev&&!(h.thread&&!h.thread.done&&b.type!=='ev_button')) startHat(h);
+    h.prev=now; }
+  W.btnEdge={};
+}
 function tick(){
-  for(const th of threads){ if(th.done) continue;
+  checkHats();
+  for(const th of threads.slice()){ if(th.done) continue; curThread=th;
     try{ if(th.gen.next().done) th.done=true; }
-    catch(e){ if(e===STOP){ finish('stop'); return; } th.done=true; console.error(e); } }
+    catch(e){ if(e===STOP){ curThread=null; finish('stop'); return; } th.done=true; if(e!==STOP_THIS) console.error(e); } }
+  curThread=null;
   physics(DT); W.t+=DT;
   if(L.match){ W.clock-=DT; if(W.clock<=0){ W.clock=0; finish('time'); return; } }
   if(L.live&&L.missions().every(m=>m.done)){ finish('end'); return; }
-  if(threads.every(t=>t.done)) finish('end');
+  if(threads.every(t=>t.done)&&!(W.hats||[]).some(h=>h.b.type!=='ev_receive')) finish('end');
 }
 function score(){ return L.missions().reduce((a,m)=>a+(m.pts||0),0); }
 function finish(why){
@@ -688,6 +960,21 @@ function finish(why){
     const me=P(), sc=score(); if(sc>(me.best||0)){ me.best=sc; save(); pushMe(); }
     if(why==='time') banner('Time! Final score: '+score()+' of '+maxScore()+'.','Play again',()=>{ resetWorld(); },score()>=200);
     else toast('Run finished. Score so far: '+score()+'. Press Run to launch again from Home.');
+    return;
+  }
+  if(L.mission){
+    const c=chalState(); lastMissions='';
+    if(why==='user'&&!c.scored) return;
+    if(!c.scored){ toast('Not yet: '+L.task.charAt(0).toLowerCase()+L.task.slice(1)); return; }
+    const stars=1+(c.clean?1:0)+(c.clean&&c.home?1:0), t=Math.round(W.t*10)/10, me=P();
+    me.stars[L.id]=Math.max(me.stars[L.id]||0,stars); let rec=false;
+    if(stars===3&&!(Number(me.times[L.id])<=t)){ me.times[L.id]=t; rec=true; }
+    save(); renderLevels(); pushMe(); burst(R.x,R.y,40);
+    const i=LEVELS.indexOf(L);
+    const msg=stars===1?'Mission done! ★☆☆ For ★★, no bumps and nothing else moved'+(c.what?' (this run: '+c.what+')':'')+'.'
+      :stars===2?'Clean run! ★★☆ For ★★★, finish with the whole robot back inside a launch area.'
+      :'Perfect run! ★★★ in '+t+' s'+(rec?', your best time.':'.');
+    banner(msg,'Next challenge',()=>setLevel(i+1),stars===3);
     return;
   }
   if(L.streak&&why!=='user'){ const hit=onPad(W.pads[0]); streaks[L.id]=hit?(streaks[L.id]||0)+1:0; lastMissions='';
@@ -768,7 +1055,7 @@ function draw(now){
   for(const r of W.rocks){ disk(c,r.x+.5,r.y+.7,r.r,'rgba(0,0,0,.15)'); disk(c,r.x,r.y,r.r,r.col||'#7F8B86'); disk(c,r.x-r.r*.25,r.y-r.r*.3,r.r*.5,'rgba(255,255,255,.22)'); }
   if(L.paint) L.paint(c);
   if(W.trail.length>1){ c.strokeStyle=M?'rgba(255,255,255,.75)':'rgba(18,121,181,.45)'; c.lineWidth=.6; c.setLineDash([1.2,1.4]); c.beginPath(); W.trail.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])); c.stroke(); c.setLineDash([]); }
-  for(const o of W.objs) if(!o.car) drawObj(c,o,1);
+  for(const o of W.objs) if(!o.car&&!o.ghost) drawObj(c,o,1);
   for(const t of W.tags){ disk(c,t.x,t.y,2.9,'#12302B'); label(c,t.t,t.x,t.y+.2,t.t.length>1?3:3.6,'#FFD21F'); }
   drawRobot(c);
   if(W.bumpFlash>0){ c.strokeStyle='rgba(199,54,47,'+(W.bumpFlash*2)+')'; c.lineWidth=1; c.beginPath(); c.arc(R.x,R.y,15,0,7); c.stroke(); label(c,'bump!',R.x,R.y-17,4.5,'rgba(255,90,80,'+Math.min(1,W.bumpFlash*3)+')'); }
@@ -831,11 +1118,15 @@ function toast(msg){ banner(msg,'',null,false); toastTimer=setTimeout(hideBanner
 function hideBanner(){ clearTimeout(toastTimer); $('banner').hidden=true; }
 $('bannerBtn').onclick=()=>{ hideBanner(); if(bannerAct) bannerAct(); };
 function setRunBtn(){ const b=$('run'); b.textContent=running?'■ Stop':'▶ Run'; b.classList.toggle('on',running); }
+function lvLabel(lv){ return lv.mission?'M'+String(lv.mission).padStart(2,'0')+' '+lv.name:lv.match?lv.name:(LEVELS.indexOf(lv)+1)+' '+lv.name; }
 function renderLevels(){
-  const nav=$('levels'); nav.textContent='';
-  LEVELS.forEach((lv,i)=>{ const b=document.createElement('button'); b.type='button'; b.className='lv'; b.setAttribute('aria-current',String(lv===L));
+  const nav=$('levels'); nav.textContent=''; let grp='', cur=null;
+  LEVELS.forEach((lv,i)=>{ const g=lv.match?'Match':lv.mission?'Missions':'Lessons';
+    if(g!==grp){ grp=g; const h=document.createElement('span'); h.className='lvg'; h.textContent=g; nav.append(h); }
+    const b=document.createElement('button'); b.type='button'; b.className='lv'; b.setAttribute('aria-current',String(lv===L)); if(lv===L) cur=b;
     const s=P().stars[lv.id]||0, st=document.createElement('span'); st.className='st'+(s?' won':''); st.textContent=lv.match?'2:30':('★'.repeat(s)+'☆'.repeat(3-s));
-    b.append((i+1)+' '+lv.name,st); b.onclick=()=>setLevel(i); nav.append(b); });
+    b.append(lvLabel(lv),st); b.onclick=()=>setLevel(i); nav.append(b); });
+  if(cur) nav.scrollLeft=Math.max(0,cur.offsetLeft-nav.clientWidth/2+cur.offsetWidth/2);
 }
 function renderMissions(){
   const ms=L.missions(), key=JSON.stringify(ms); if(key===lastMissions) return; lastMissions=key;
@@ -848,18 +1139,18 @@ function renderMissions(){
 function hud(){
   const s=sense(); $('hYaw').textContent=yaw()+'°'; $('hSw').style.background=ZC[s.c]; $('hCol').textContent=s.c==='none'?'no color':s.c; $('hRef').textContent=s.r+'%';
   $('hArm').textContent=R.arm>=89?'up':R.arm<=1?'down':Math.round(R.arm)+'°'; $('hTime').textContent=(W.t-W.timer0).toFixed(1);
-  $('cDisp').hidden=!W.display; $('hDisp').textContent=W.display;
+  const lit=W.center&&W.center!=='off'; $('cDisp').hidden=!W.display&&!lit; $('hDisp').textContent=W.display; $('hLight').hidden=!lit; if(lit) $('hLight').style.background=ZC[W.center];
   if(L.match){ const t=Math.ceil(W.clock); $('hClock').textContent=Math.floor(t/60)+':'+String(t%60).padStart(2,'0'); }
 }
 function loadProgram(json){ loading=true; try{ Blockly.serialization.workspaces.load(json,ws); }catch(e){ console.error(e); ws.clear(); Blockly.serialization.workspaces.load(program([]),ws); } loading=false; ws.scroll(0,0); }
 let loading=false;
 function setLevel(i){
   if(running) finish('user');
-  i=clamp(i,0,LEVELS.length-1); L=LEVELS[i]; store.level=i; save();
+  i=clamp(i,0,LEVELS.length-1); L=LEVELS[i]; store.level=i; store.levelId=L.id; save();
   cv.style.aspectRatio=L.w+' / '+L.h; cv.classList.toggle('drag',!!L.drag);
-  $('lname').textContent=(i+1)+'. '+L.name; $('lgoal').textContent=L.goal; $('lhint').textContent=L.hint; $('hintbox').open=false;
-  $('cScore').hidden=$('cClock').hidden=$('docks').hidden=!L.match; docksLabel();
-  resetWorld(); lastMissions=''; renderLevels(); streaks={}; renderLib(); $('jigL').hidden=!L.sloppy;
+  $('lname').textContent=L.mission||L.match?lvLabel(L):(i+1)+'. '+L.name; $('lgoal').textContent=L.goal; $('lhint').textContent=L.hint; $('hintbox').open=false;
+  $('cScore').hidden=$('cClock').hidden=!L.match; $('docks').hidden=!(L.match||L.mission>=13); docksLabel();
+  resetWorld(); lastMissions=''; renderLevels(); streaks={}; renderLib(); $('jigL').hidden=!L.sloppy; lbFollow();
   if(ws) loadProgram(store.progs[progKey()]||store.progs[L.id]||program(L.starter()));
 }
 $('run').onclick=run;
@@ -886,19 +1177,20 @@ cv.addEventListener('pointermove',e=>{ if(!dragging) return; const p=ptr(e); dra
   if(dragging.moved>1.5){ const tx=dragging.ox+p[0]-dragging.sx, ty=dragging.oy+p[1]-dragging.sy, h=tx<L.w/2?W.homes[0]:W.homes[1]; let dx=tx-h.cx, dy=ty-h.cy; const d=Math.hypot(dx,dy)||1, m=h.r-11.5; if(d>m){ dx*=m/d; dy*=m/d; }
     R.x=clamp(h.cx+dx,13,L.w-13); R.y=clamp(h.cy+dy,13,L.h-13); } });
 const endDrag=()=>{ if(!dragging) return; if(dragging.moved<=1.5){ R.th+=45*RAD; } else if(!homeOK(R.x,R.y)){ R.x=dragging.ox; R.y=dragging.oy; }
-  const d=Math.round(R.th/RAD/45)*45%360; store.place={x:Math.round(R.x*10)/10,y:Math.round(R.y*10)/10,d}; save(); dragging=null; placeRobot(); };
+  const d=Math.round(R.th/RAD/45)*45%360; (store.places=store.places||{})[L.id]={x:Math.round(R.x*10)/10,y:Math.round(R.y*10)/10,d}; save(); dragging=null; placeRobot(); };
 cv.addEventListener('pointerup',endDrag); cv.addEventListener('pointercancel',endDrag);
 function docksLabel(){ const o=ORDERS[store.docks||0]; $('docks').textContent='Docks: mine '+o[0]+' · city '+o[1]+' · farm '+o[2]; }
 $('docks').onclick=()=>{ if(running) finish('user'); store.docks=((store.docks||0)+1)%6; save(); docksLabel(); resetWorld(); lastMissions=''; };
 $('zoom').onclick=()=>{ zoom=!zoom; $('zoom').textContent=zoom?'Zoom out':'Zoom in'; };
 
+['left','right'].forEach(k=>{ $(k==='left'?'hubL':'hubR').onclick=()=>{ if(!running||!W.btnDown) return; W.btnEdge[k]=true; W.btnDown[k]=W.t+.4; }; });
 /* ---------------- block workspace ---------------- */
 const isDark=()=>{ const t=document.documentElement.getAttribute('data-theme'); return t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches; };
 const st=c=>({colourPrimary:c});
 function theme(dark){
   return Blockly.Theme.defineTheme(dark?'glowDark':'glowLight',{base:Blockly.Themes.Zelos,startHats:false,
     blockStyles:{ev:{colourPrimary:'#C99700',hat:'cap'},mv:st('#E0399F'),mt:st('#0A84E0'),hub:st('#8E5CF0'),ct:st('#F29A00'),sn:st('#17A9D1'),op:st('#12A150'),my:st('#F0525A'),
-      variable_blocks:st('#F0802B'),math_blocks:st('#12A150'),text_blocks:st('#8E5CF0')},
+      variable_blocks:st('#F0802B'),math_blocks:st('#12A150'),text_blocks:st('#8E5CF0'),procedure_blocks:st('#F0525A'),snd:st('#C86BE0')},
     componentStyles:dark?{workspaceBackgroundColour:'#0F1E1B',toolboxBackgroundColour:'#132522',toolboxForegroundColour:'#E7F3EE',flyoutBackgroundColour:'#1B332E',flyoutForegroundColour:'#E7F3EE',flyoutOpacity:.97,scrollbarColour:'#3B5A52',insertionMarkerColour:'#fff',insertionMarkerOpacity:.3}
       :{workspaceBackgroundColour:'#F7FAF8',toolboxBackgroundColour:'#FFFFFF',toolboxForegroundColour:'#12302B',flyoutBackgroundColour:'#E2ECE7',flyoutForegroundColour:'#12302B',flyoutOpacity:.97,scrollbarColour:'#A9BDB5',insertionMarkerColour:'#000',insertionMarkerOpacity:.25},
     fontStyle:{family:'Nunito, "Segoe UI", sans-serif',weight:'700',size:11}});
@@ -907,6 +1199,16 @@ const small=window.matchMedia('(max-width:900px)').matches;
 ws=Blockly.inject('blockly',{toolbox:TOOLBOX,renderer:'zelos',theme:theme(isDark()),trashcan:false,sounds:false,
   zoom:{controls:false,wheel:true,pinch:true,startScale:small?.62:.78,maxScale:1.6,minScale:.35,scaleSpeed:1.1},
   move:{scrollbars:true,drag:true,wheel:true},grid:{spacing:28,length:2,colour:isDark()?'#27433C':'#D5E1DB',snap:false}});
+Blockly.Msg.PROCEDURES_DEFNORETURN_TITLE='define'; Blockly.Msg.PROCEDURES_DEFNORETURN_PROCEDURE='my block';
+Blockly.Msg.PROCEDURES_BEFORE_PARAMS='with:'; Blockly.Msg.PROCEDURES_CALL_BEFORE_PARAMS='with:'; Blockly.Msg.PROCEDURES_DEFNORETURN_COMMENT='';
+ws.registerButtonCallback('MAKE_BLOCK',()=>ask('Name your new block:','my block',v=>{ const name=String(v||'').trim(); if(!name) return;
+  const b=ws.newBlock('procedures_defnoreturn'); b.setFieldValue(name,'NAME'); b.initSvg(); b.render();
+  const m=ws.getMetricsManager().getViewMetrics(true); b.moveBy(m.left+40,m.top+40); toast('Add blocks under “define '+b.getFieldValue('NAME')+'”, then find your block in My Blocks. Use the gear on the define block to add inputs.'); }));
+ws.registerToolboxCategoryCallback('MYBLOCKS',w=>{
+  const list=[{kind:'button',text:'Make a Block',callbackkey:'MAKE_BLOCK'}];
+  Blockly.Procedures.allProcedures(w)[0].forEach(pr=>list.push({kind:'block',type:'procedures_callnoreturn',extraState:{name:pr[0],params:pr[1]}}));
+  list.push({kind:'label',text:'Ready-made'},T('my_turn'),T('my_fork_up'),T('my_fork_down'));
+  return list; });
 ws.addChangeListener(e=>{ if(e.isUiEvent||loading) return; store.progs[progKey()]=Blockly.serialization.workspaces.save(ws); save(); });
 const reTheme=()=>ws.setTheme(theme(isDark()));
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',reTheme);
@@ -920,14 +1222,16 @@ window.addEventListener('resize',()=>Blockly.svgResize(ws));
    page uses the artifact's own database instead. With neither, scores stay on the device. */
 const SHEET_URL=String(window.GLOWBOT_SHEET_URL||'').trim();
 let back=null, canWrite=true, team={}, teamState='local', writeChain=Promise.resolve(), streaks={}, dirty=false, libSeq=0;
-function P(){ const k=store.me||'guest'; return store.players[k]||(store.players[k]={name:k==='guest'?'Guest':k,stars:k==='guest'?(store.stars||{}):{},best:0}); }
+function P(){ const k=store.me||'guest'; const p=store.players[k]||(store.players[k]={name:k==='guest'?'Guest':k,stars:k==='guest'?(store.stars||{}):{},best:0,times:{}}); if(!p.times) p.times={}; return p; }
 function progKey(){ return (store.me&&store.me!=='guest'?store.me+'/':'')+L.id; }
 function allInHome(){ const h=W.homes[0]; return [[BODY.x0,BODY.y0],[BODY.x0,BODY.y1],[BODY.x1,BODY.y0],[BODY.x1,BODY.y1]].every(p=>{ const q=toWorld(p[0],p[1]); return Math.hypot(q[0]-h.cx,q[1]-h.cy)<=h.r; }); }
 const slug=n=>String(n).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,24);
 const starSum=p=>Object.values(p.stars||{}).reduce((a,b)=>a+(Number(b)||0),0);
-function merged(a,b){ const stars=Object.assign({},a&&a.stars); if(b&&b.stars) for(const id in b.stars) stars[id]=Math.max(Number(stars[id])||0,Number(b.stars[id])||0);
-  return {name:(b&&b.name)||(a&&a.name)||'',stars,best:Math.max((a&&Number(a.best))||0,(b&&Number(b.best))||0)}; }
-const sameScore=(a,b)=>!!a&&!!b&&a.name===b.name&&a.best===b.best&&JSON.stringify(a.stars)===JSON.stringify(b.stars);
+function merged(a,b){ const stars=Object.assign({},a&&a.stars), times=Object.assign({},a&&a.times);
+  if(b&&b.stars) for(const id in b.stars) stars[id]=Math.max(Number(stars[id])||0,Number(b.stars[id])||0);
+  if(b&&b.times) for(const id in b.times){ const v=Number(b.times[id]); if(v>0&&!(Number(times[id])<=v)) times[id]=v; }
+  return {name:(b&&b.name)||(a&&a.name)||'',stars,times,best:Math.max((a&&Number(a.best))||0,(b&&Number(b.best))||0)}; }
+const sameScore=(a,b)=>!!a&&!!b&&a.name===b.name&&a.best===b.best&&JSON.stringify(a.stars)===JSON.stringify(b.stars)&&JSON.stringify(a.times||{})===JSON.stringify(b.times||{});
 
 function claudeBackend(db){
   let progs=[];
@@ -953,7 +1257,7 @@ function sheetBackend(url){
       poll(); setInterval(poll,30000);
       document.addEventListener('visibilitychange',()=>{ if(!document.hidden) poll(); });
     },
-    savePlayer:(k,b)=>post({type:'player',key:k,name:b.name,stars:b.stars,best:b.best}),
+    savePlayer:(k,b)=>post({type:'player',key:k,name:b.name,stars:b.stars,times:b.times,best:b.best}),
     saveProgram:(id,b)=>post(Object.assign({type:'program'},b)).then(j=>{ delete cache[b.level]; return j; }),
     programs:lv=>{ const c=cache[lv]; if(c&&Date.now()-c.t<25000) return c.p;
       const p=get('what=programs&level='+encodeURIComponent(lv)).then(j=>j.programs||[]); cache[lv]={t:Date.now(),p}; p.catch(()=>{ delete cache[lv]; }); return p; }};
@@ -971,7 +1275,7 @@ function teamNote(){
 function pushMe(){
   renderBoard(); const k=store.me; if(!back||!canWrite||!k||k==='guest') return;
   const m=merged(team[k],P()); if(sameScore(team[k]&&merged(team[k],null),m)&&!dirty) return;
-  const body={name:m.name,stars:m.stars,best:m.best,t:Date.now()};
+  const body={name:m.name,stars:m.stars,times:m.times,best:m.best,t:Date.now()};
   writeChain=writeChain.then(()=>back.savePlayer(k,body)).then(()=>{
     dirty=false; team[k]=merged(team[k],body); if(teamState==='offline'){ teamState='shared'; teamNote(); }
   },e=>{
@@ -979,23 +1283,39 @@ function pushMe(){
     dirty=true; if(back&&back.kind==='sheet'&&teamState==='shared'){ teamState='offline'; teamNote(); }
   });
 }
+function boardRows(){ const rows={}; for(const k in team) rows[k]=merged(team[k],null);
+  for(const k in store.players) if(k!=='guest') rows[k]=merged(rows[k],store.players[k]); return rows; }
 function renderBoard(){
-  const rows={}; for(const k in team) rows[k]=merged(team[k],null);
-  for(const k in store.players) if(k!=='guest') rows[k]=merged(rows[k],store.players[k]);
-  const lessons=LEVELS.filter(l=>!l.match).length;
+  const rows=boardRows(), total=LEVELS.filter(l=>!l.match).length;
   const list=Object.keys(rows).map(k=>({k,name:String(rows[k].name||k).slice(0,24),stars:starSum(rows[k]),solved:Object.keys(rows[k].stars).filter(i=>rows[k].stars[i]>0).length,best:rows[k].best}))
     .sort((a,b)=>b.stars-a.stars||b.best-a.best||a.name.localeCompare(b.name));
   const tb=$('boardBody'); tb.textContent='';
   if(!list.length){ const tr=document.createElement('tr'), td=document.createElement('td'); td.colSpan=5; td.className='empty'; td.textContent='No coders yet. Tap “Add coder” to put your name on the board.'; tr.append(td); tb.append(tr); }
   list.forEach((r,i)=>{ const tr=document.createElement('tr'); if(r.k===store.me) tr.className='me';
-    [i+1,r.name,'★ '+r.stars+' / '+lessons*3,r.solved+' / '+lessons,r.best||'–'].forEach(v=>{ const td=document.createElement('td'); td.textContent=v; tr.append(td); }); tb.append(tr); });
+    [i+1,r.name,'★ '+r.stars+' / '+total*3,r.solved+' / '+total,r.best||'–'].forEach(v=>{ const td=document.createElement('td'); td.textContent=v; tr.append(td); }); tb.append(tr); });
   const sel=$('me'); sel.textContent='';
   [{k:'guest',name:'Guest (not on the board)'}].concat(list).forEach(r=>{ const o=document.createElement('option'); o.value=r.k; o.textContent=r.name; sel.append(o); });
   sel.value=store.me&&rows[store.me]?store.me:'guest';
+  renderLB();
 }
+function lbFollow(){ const p=$('lbPick'); if(p&&L){ p.value=L.id; renderLB(); } }
+function renderLB(){
+  const pick=$('lbPick'); if(!pick||!L) return;
+  const lv=LEVELS.find(l=>l.id===pick.value)||L, rows=boardRows();
+  let list=Object.keys(rows).map(k=>({k,name:String(rows[k].name||k).slice(0,24),s:Number(rows[k].stars[lv.id])||0,t:Number(rows[k].times[lv.id])||0,best:Number(rows[k].best)||0}));
+  list=lv.match?list.filter(r=>r.best>0).sort((a,b)=>b.best-a.best):list.filter(r=>r.s>0).sort((a,b)=>b.s-a.s||(a.t||1e9)-(b.t||1e9)||a.name.localeCompare(b.name));
+  $('lbC1').textContent=lv.match?'Best score':'Stars'; $('lbC2').textContent=lv.mission?'Best ★★★ time':''; $('lbC2').hidden=!lv.mission;
+  const tb=$('lbBody'); tb.textContent='';
+  if(!list.length){ const tr=document.createElement('tr'), td=document.createElement('td'); td.colSpan=4; td.className='empty'; td.textContent=lv.match?'No Match Day scores yet.':'Nobody has solved this one yet.'; tr.append(td); tb.append(tr); return; }
+  list.forEach((r,i)=>{ const tr=document.createElement('tr'); if(r.k===store.me) tr.className='me';
+    const cells=[i+1,r.name,lv.match?r.best:'★'.repeat(r.s)+'☆'.repeat(3-r.s)]; if(lv.mission) cells.push(r.t?r.t.toFixed(1)+' s':'–');
+    cells.forEach(v=>{ const td=document.createElement('td'); td.textContent=v; tr.append(td); }); tb.append(tr); });
+}
+LEVELS.forEach(l=>{ const o=document.createElement('option'); o.value=l.id; o.textContent=lvLabel(l); $('lbPick').append(o); });
+$('lbPick').onchange=renderLB;
 function useCoder(k,name){
   if(k!=='guest'&&!store.players[k]){ const m=merged(team[k],null); m.name=name||m.name||k; store.players[k]=m; }
-  store.me=k; save(); setLevel(store.level||0); pushMe();
+  store.me=k; save(); setLevel(Math.max(0,LEVELS.indexOf(L))); pushMe();
 }
 $('me').onchange=()=>useCoder($('me').value);
 $('addMe').onclick=()=>ask('First name or nickname for the board:','',v=>{ const name=String(v||'').trim().slice(0,24), k=slug(name); if(!k||k==='guest') return; useCoder(k,name); });
@@ -1038,7 +1358,7 @@ $('pasteProg').onclick=()=>ask('Paste program text here:','',v=>{ if(!v) return;
   let first=true;
   back.start(t=>{
     clearTimeout(timer); teamState='shared'; team=t;
-    let changed=false; for(const k in store.players) if(team[k]){ const m=merged(team[k],store.players[k]); if(!sameScore(m,merged(store.players[k],null))){ store.players[k].stars=m.stars; store.players[k].best=m.best; changed=true; } }
+    let changed=false; for(const k in store.players) if(team[k]){ const m=merged(team[k],store.players[k]); if(!sameScore(m,merged(store.players[k],null))){ store.players[k].stars=m.stars; store.players[k].times=m.times; store.players[k].best=m.best; changed=true; } }
     if(changed) save(); teamNote(); renderBoard(); renderLevels();
     if(first||dirty){ first=false; pushMe(); }
   },()=>{ clearTimeout(timer); back=null; teamState='local'; teamNote(); renderLib(); },
@@ -1046,6 +1366,16 @@ $('pasteProg').onclick=()=>ask('Paste program text here:','',v=>{ if(!v) return;
 })();
 teamNote(); renderBoard();
 
+/* ---------------- Robot setup ---------------- */
+(function(){
+  const opt=(sel,list,none)=>{ sel.textContent=''; if(none){ const o=document.createElement('option'); o.value=''; o.textContent='none'; sel.append(o); } list.forEach(x=>{ const o=document.createElement('option'); o.value=x[1]; o.textContent=x[0]; sel.append(o); }); };
+  opt($('cfgDrive'),PAIRS); opt($('cfgFork'),PORTS); opt($('cfgSensor'),PORTS); opt($('cfgDist'),PORTS,true); opt($('cfgForce'),PORTS,true);
+  const ids={cfgDrive:'drive',cfgFork:'fork',cfgUp:'forkUp',cfgSensor:'sensor',cfgDist:'dist',cfgForce:'force'};
+  const note=()=>{ const used=[CFG.drive[0],CFG.drive[1],CFG.fork,CFG.sensor,CFG.dist,CFG.force].filter(Boolean), dup=used.filter((v,i)=>used.indexOf(v)!==i);
+    $('cfgNote').textContent=dup.length?'Port '+dup[0]+' is used twice. Each port can hold one motor or sensor.':'Wheels '+CFG.drive[0]+'+'+CFG.drive[1]+', fork '+CFG.fork+', color sensor '+CFG.sensor+(CFG.dist?', distance '+CFG.dist:'')+(CFG.force?', force '+CFG.force:'')+'.'; };
+  for(const id in ids){ $(id).value=CFG[ids[id]]; $(id).onchange=()=>{ CFG[ids[id]]=$(id).value; store.cfg=Object.assign({},CFG); save(); note(); try{ ws.updateToolbox(buildToolbox()); }catch(e){} }; }
+  note();
+})();
 /* ---------------- main loop ---------------- */
 let lastTs=0;
 function frame(ts){
@@ -1057,11 +1387,11 @@ function frame(ts){
   draw(ts); hud(); renderMissions();
   requestAnimationFrame(frame);
 }
-setLevel(store.level||0);
+{ const k=LEVELS.findIndex(l=>l.id===store.levelId); setLevel(k>=0?k:(store.level||0)); }
 requestAnimationFrame(frame);
 
 /* small hook for testing from the console */
-window.glowbot={get ws(){return ws;},get world(){return W;},get robot(){return R;},run,setLevel,load:loadProgram,program,mk,
+window.glowbot={go(id){ setLevel(LEVELS.findIndex(l=>l.id===id)); },get ws(){return ws;},get world(){return W;},get robot(){return R;},run,setLevel,load:loadProgram,program,mk,
   fast(maxSec){ let n=0; while(running&&n<maxSec/DT){ tick(); n++; } return {running,x:R.x,y:R.y,yaw:yaw(),arm:R.arm,missions:L.missions()}; }};
 })();
 </script>
