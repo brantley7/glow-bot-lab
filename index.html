@@ -2,6 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#123A2F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Glow Bot Lab">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 /* Base reset: the same small reset the claude.ai version gets from its viewer. */
 :root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -231,8 +240,9 @@ details ul{padding-left:18px}
         <h3>Team programs for this challenge</h3>
         <ul id="lib"></ul>
         <div class="who"><button class="btn sm" id="shareProg" type="button" hidden>Share my program</button><button class="btn sm" id="copyProg" type="button">Copy program text</button><button class="btn sm" id="pasteProg" type="button">Paste program text</button></div>
-        <div class="who"><button class="btn sm" id="openSpike" type="button">Open a SPIKE app file (.llsp3)</button><input type="file" id="spikeFile" accept=".llsp3,.llsp,.sb3" hidden></div>
-        <p class="note">Opens a program saved from the LEGO SPIKE app into the current challenge so you can test it here first.</p>
+        <h3>SPIKE app files</h3>
+        <div class="who"><button class="btn sm" id="publishSpike" type="button" hidden>Publish to team Drive</button><button class="btn sm" id="saveSpike" type="button">Save as SPIKE file</button><button class="btn sm" id="openSpike" type="button">Open a SPIKE file</button><input type="file" id="spikeFile" accept=".llsp3,.llsp,.sb3" hidden></div>
+        <p class="note">“Publish to team Drive” puts this program in the team’s Google Drive folder, named with your name and the challenge, ready to open in the SPIKE app at practice. “Save as SPIKE file” downloads it to this device. “Open a SPIKE file” loads a program saved from the SPIKE app into this challenge.</p>
       </div>
     </section>
     <section class="code"><div id="blockly"></div><div class="tip">Drag blocks under “when program starts”</div></section>
@@ -1284,6 +1294,7 @@ function sheetBackend(url){
       poll(); setInterval(poll,30000);
       document.addEventListener('visibilitychange',()=>{ if(!document.hidden) poll(); });
     },
+    publishFile:b=>post(b),
     savePlayer:(k,b)=>post({type:'player',key:k,name:b.name,stars:b.stars,times:b.times,best:b.best}),
     saveProgram:(id,b)=>post(Object.assign({type:'program'},b)).then(j=>{ delete cache[b.level]; return j; }),
     programs:lv=>{ const c=cache[lv]; if(c&&Date.now()-c.t<25000) return c.p;
@@ -1298,6 +1309,7 @@ function teamNote(){
     :teamState==='offline'?'The team board cannot be reached right now. Your scores are kept on this device and sent when it reconnects.'
     :'Scores are saved on this device only.';
   $('shareProg').hidden=!(back&&canWrite);
+  $('publishSpike').hidden=!(back&&back.kind==='sheet'&&canWrite);
 }
 function pushMe(){
   renderBoard(); const k=store.me; if(!back||!canWrite||!k||k==='guest') return;
@@ -1566,6 +1578,233 @@ $('spikeFile').onchange=async()=>{
   catch(e){ toast(e&&e.message?e.message:'That file could not be opened.'); }
 };
 
+/* ---------------- save a program as a SPIKE app file (.llsp3) ----------------
+   Builds the same format the SPIKE app writes: a zip with manifest.json and scratch.sb3, which is itself a zip
+   holding project.json. Block shapes follow the block examples that ship inside the SPIKE app. */
+const SPIKE_COLOR_NUM={black:'0',red:'9',green:'6',blue:'3',yellow:'7',white:'10',none:'-1'};
+const SPIKE_IMAGES={'♥':'0909099999999990999000900','☺':'0000009090000009000909990'.replace(/./g,c=>c==='9'?'9':'0'),'☹':'0000009090000000999090009','✓':'0000000009000909090000900','✗':'9000909090009000909090009',
+  '↑':'0090009990909090090000900','↓':'0090000900909090999000900','←':'0090009000999990900000900'.replace(/./g,c=>c),'→':'0090000090999990009000900','★':'0090099999099900909090009','■':'9999990009900099000999999','♪':'0099900909009090990099900'};
+function exportSpike(name){
+  const blocks={}, extensions=new Set(['flipperevents']), stageVars={}, broadcasts={}, notes=[];
+  let n=0; const nid=()=>{ n++; return 'g'+n.toString(36)+'_'+Math.random().toString(36).slice(2,8); };
+  const varId=nm=>{ for(const k in stageVars) if(stageVars[k][0]===nm) return k; const id='v_'+nid(); stageVars[id]=[nm,0]; return id; };
+  const bcId=nm=>{ for(const k in broadcasts) if(broadcasts[k]===nm) return k; const id='b_'+nid(); broadcasts[id]=nm; return id; };
+  const note=t=>{ if(notes.indexOf(t)<0) notes.push(t); };
+  const add=(op,parent,extra)=>{ const id=nid(); blocks[id]=Object.assign({opcode:op,next:null,parent:parent||null,inputs:{},fields:{},shadow:false,topLevel:false},extra||{}); const ext=op.split('_')[0]; if(/^flipper/.test(ext)) extensions.add(ext); return id; };
+  const menu=(parent,op,value)=>{ const id=nid(); blocks[id]={opcode:op,next:null,parent,inputs:{},fields:{['field_'+op]:[String(value),null]},shadow:true,topLevel:false}; return [1,id]; };
+  const menuF=(parent,op,field,value)=>{ const id=nid(); blocks[id]={opcode:op,next:null,parent,inputs:{},fields:{[field]:[String(value),null]},shadow:true,topLevel:false}; return [1,id]; };
+  const lit=(v,kind)=>{ const code={math_number:4,math_positive_number:5,math_whole_number:6,math_integer:7,text:10}[kind||'math_number']; return [code,String(v)]; };
+  let params=[];  /* names of the My Block inputs while exporting a define stack */
+  const B=(b,name)=>b.getInputTargetBlock(name);
+  const literalOf=x=>{ if(!x) return null; if(x.type==='math_number') return x.getFieldValue('NUM'); if(x.type==='text') return x.getFieldValue('TEXT'); return null; };
+  /* a value input: a typed number or text, or a reporter block placed over it */
+  function val(parent,b,name,kind,dflt){
+    const x=B(b,name), l=literalOf(x);
+    if(!x||l!==null) return [1,lit(l===null?(dflt===undefined?0:dflt):l,kind)];
+    if(x.type==='variables_get'){ const vn=x.getField('VAR').getText(); if(params.indexOf(vn)>=0){ const r=rep(parent,x); return [3,r,lit(dflt===undefined?0:dflt,kind)]; } return [3,[12,vn,varId(vn)],lit(dflt===undefined?0:dflt,kind)]; }
+    const r=rep(parent,x); return r?[3,r,lit(dflt===undefined?0:dflt,kind)]:[1,lit(dflt===undefined?0:dflt,kind)];
+  }
+  function boolv(parent,b,name){ const x=B(b,name); if(!x) return null; const r=rep(parent,x); return r?[2,r]:null; }
+  const num=(b,name,d)=>{ const l=literalOf(B(b,name)); const v=Number(l); return l!==null&&isFinite(v)?v:d; };
+  /* reporters and boolean blocks */
+  function rep(parent,x){
+    const f=nm=>x.getFieldValue(nm);
+    const mk3=(op,inputs,fields)=>{ const id=add(op,parent); const bl=blocks[id]; if(fields) for(const k in fields) bl.fields[k]=[fields[k],null]; if(inputs) for(const k in inputs){ const v=inputs[k](id); if(v) bl.inputs[k]=v; } return id; };
+    switch(x.type){
+      case 'op_arith': return mk3({'+':'operator_add','-':'operator_subtract','*':'operator_multiply','/':'operator_divide'}[f('OP')],{NUM1:id=>val(id,x,'A'),NUM2:id=>val(id,x,'B')});
+      case 'op_cmp': return mk3({'<':'operator_lt','>':'operator_gt','=':'operator_equals'}[f('OP')],{OPERAND1:id=>val(id,x,'A','text',''),OPERAND2:id=>val(id,x,'B','text','')});
+      case 'op_logic': return mk3(f('OP')==='and'?'operator_and':'operator_or',{OPERAND1:id=>boolv(id,x,'A'),OPERAND2:id=>boolv(id,x,'B')});
+      case 'op_not': return mk3('operator_not',{OPERAND:id=>boolv(id,x,'A')});
+      case 'op_random': return mk3('operator_random',{FROM:id=>val(id,x,'A','math_number',1),TO:id=>val(id,x,'B','math_number',10)});
+      case 'op_between': extensions.add('flipperoperator'); return mk3('flipperoperator_isInBetween',{VALUE:id=>val(id,x,'V'),LOW:id=>val(id,x,'LO'),HIGH:id=>val(id,x,'HI')});
+      case 'op_mod': return mk3('operator_mod',{NUM1:id=>val(id,x,'A'),NUM2:id=>val(id,x,'B')});
+      case 'op_round': return mk3('operator_round',{NUM:id=>val(id,x,'A')});
+      case 'op_math': return mk3('operator_mathop',{NUM:id=>val(id,x,'A')},{OPERATOR:{abs:'abs',floor:'floor',ceil:'ceiling',sqrt:'sqrt',sin:'sin',cos:'cos',tan:'tan',asin:'asin',acos:'acos',atan:'atan',ln:'ln',log:'log',exp:'e ^',pow10:'10 ^'}[f('OP')]||'abs'});
+      case 'op_join': return mk3('operator_join',{STRING1:id=>val(id,x,'A','text',''),STRING2:id=>val(id,x,'B','text','')});
+      case 'op_letter': return mk3('operator_letter_of',{LETTER:id=>val(id,x,'N','math_whole_number',1),STRING:id=>val(id,x,'S','text','')});
+      case 'op_length': return mk3('operator_length',{STRING:id=>val(id,x,'A','text','')});
+      case 'op_contains': return mk3('operator_contains',{STRING1:id=>val(id,x,'A','text',''),STRING2:id=>val(id,x,'B','text','')});
+      case 'variables_get': { const vn=x.getField('VAR').getText(); if(params.indexOf(vn)>=0){ const id=add('argument_reporter_string_number',parent); blocks[id].fields.VALUE=[vn,null]; return id; } const id=add('data_variable',parent); blocks[id].fields.VARIABLE=[vn,varId(vn)]; return id; }
+      case 'sn_is_color': return mk3('flippersensors_isColor',{PORT:id=>menu(id,'flippersensors_color-sensor-selector',f('PORT')),VALUE:id=>menu(id,'flippersensors_color-selector',SPIKE_COLOR_NUM[f('COLOR')]||'0')});
+      case 'sn_color': return mk3('flippersensors_color',{PORT:id=>menu(id,'flippersensors_color-sensor-selector',f('PORT'))});
+      case 'sn_reflect_cmp': return mk3('flippersensors_isReflectivity',{PORT:id=>menu(id,'flippersensors_color-sensor-selector',f('PORT')),VALUE:id=>val(id,x,'VAL','math_number',50)},{COMPARATOR:f('OP')});
+      case 'sn_reflect': return mk3('flippersensors_reflectivity',{PORT:id=>menu(id,'flippersensors_color-sensor-selector',f('PORT'))});
+      case 'sn_force_is': return mk3('flippersensors_isPressed',{PORT:id=>menu(id,'flippersensors_force-sensor-selector',f('PORT'))},{OPTION:f('EV')==='hard'?'hardpressed':f('EV')});
+      case 'sn_force': return mk3('flippersensors_force',{PORT:id=>menu(id,'flippersensors_force-sensor-selector',f('PORT'))},{UNIT:f('UNIT')==='n'?'N':'%'});
+      case 'sn_dist_is': return mk3('flippersensors_isDistance',{PORT:id=>menu(id,'flippersensors_distance-sensor-selector',f('PORT')),VALUE:id=>val(id,x,'VAL','math_number',15)},{COMPARATOR:f('OP'),UNIT:f('UNIT')});
+      case 'sn_dist': return mk3('flippersensors_distance',{PORT:id=>menu(id,'flippersensors_distance-sensor-selector',f('PORT'))},{UNIT:f('UNIT')});
+      case 'sn_tilted': return mk3('flippersensors_isTilted',{VALUE:id=>menu(id,'flippersensors_custom-tilted','1')});
+      case 'sn_orient': return mk3('flippersensors_isorientation',null,{ORIENTATION:{left:'leftside',right:'rightside'}[f('FACE')]||f('FACE')});
+      case 'sn_gesture': return mk3('flippersensors_ismotion',null,{MOTION:{shake:'shake',tap:'tapped',fall:'falling'}[f('G')]||'shake'});
+      case 'sn_axis': return mk3('flippersensors_orientationAxis',null,{AXIS:f('AX')});
+      case 'sn_yaw': return mk3('flippersensors_orientationAxis',null,{AXIS:'yaw'});
+      case 'sn_button': return mk3('flippersensors_buttonIsPressed',null,{BUTTON:f('BTN'),EVENT:f('EV')||'pressed'});
+      case 'sn_timer': return mk3('flippersensors_timer');
+      case 'mt_pos': return mk3('flippermotor_absolutePosition',{PORT:id=>menu(id,'flippermotor_single-motor-selector',f('PORT'))});
+      case 'mt_speed_r': return mk3('flippermotor_speed',{PORT:id=>menu(id,'flippermotor_single-motor-selector',f('PORT'))});
+      case 'mt_rel': return mk3('flippermoremotor_position',{PORT:id=>menu(id,'flippermoremotor_single-motor-selector',f('PORT'))});
+      case 'sd_volume': note('“volume” became 100'); return null;
+    }
+    note('“'+x.type+'” has no SPIKE match and was left out'); return null;
+  }
+  /* statements: returns [firstId,lastId] of the blocks made (some sim blocks become several SPIKE blocks) */
+  function stmt(parent,b){
+    const f=nm=>b.getFieldValue(nm), out=[];
+    const mk=(op,inputs,fields)=>{ const id=add(op,null); const bl=blocks[id]; if(fields) for(const k in fields) bl.fields[k]=Array.isArray(fields[k])?fields[k]:[fields[k],null]; if(inputs) for(const k in inputs){ const v=inputs[k](id); if(v) bl.inputs[k]=v; } out.push(id); return id; };
+    const motorPort=id=>menu(id,'flippermotor_multiple-port-selector',f('PORT'));
+    const dirName=d=>({fwd:'forward',back:'back',right:'clockwise',left:'counterclockwise'})[d]||'forward';
+    const unitName=u=>({cm:'cm',in:'inches',rotations:'rotations',degrees:'degrees',seconds:'seconds'})[u]||'cm';
+    const sub=(id,name)=>{ const c=B(b,name); if(!c) return null; const r=chain(id,c); return r?[2,r[0]]:null; };
+    switch(b.type){
+      case 'mv_move': mk('flippermove_move',{DIRECTION:id=>menu(id,'flippermove_custom-icon-direction',dirName(f('DIR'))),VALUE:id=>val(id,b,'AMOUNT','math_number',10)},{UNIT:unitName(f('UNIT'))}); break;
+      case 'mv_start_dir': mk('flippermove_startMove',{DIRECTION:id=>menu(id,'flippermove_custom-icon-direction',dirName(f('DIR')))}); break;
+      case 'mv_steer': mk('flippermove_steer',{STEERING:id=>menu(id,'flippermove_rotation-wheel',num(b,'STEER',0)),VALUE:id=>val(id,b,'AMOUNT','math_number',10)},{UNIT:unitName(f('UNIT'))}); break;
+      case 'mv_start_steer': mk('flippermove_startSteer',{STEERING:id=>menu(id,'flippermove_rotation-wheel',num(b,'STEER',0))}); break;
+      case 'mv_stop': mk('flippermove_stopMove'); break;
+      case 'mv_speed': mk('flippermove_movementSpeed',{SPEED:id=>val(id,b,'SPEED','math_number',50)}); break;
+      case 'mv_motors': mk('flippermove_setMovementPair',{PAIR:id=>menu(id,'flippermove_movement-port-selector',f('PAIR'))}); break;
+      case 'mv_rotcm': mk('flippermove_setDistance',{DISTANCE:id=>menu(id,'flippermove_custom-set-move-distance-number',num(b,'CM',17.5))},{UNIT:'cm'}); break;
+      case 'mv_tank': mk('flippermoremove_moveDistanceAtSpeed',{DISTANCE:id=>val(id,b,'AMOUNT','math_number',10),LEFT:id=>val(id,b,'L','math_number',50),RIGHT:id=>val(id,b,'R','math_number',50)},{UNIT:unitName(f('UNIT'))}); break;
+      case 'mv_start_tank': mk('flippermoremove_startDualSpeed',{LEFT:id=>val(id,b,'L','math_number',50),RIGHT:id=>val(id,b,'R','math_number',50)}); break;
+      case 'mv_steer_speed': note('“move … at % speed” became “set movement speed” + “move”, so the new speed stays in effect afterwards');
+        mk('flippermove_movementSpeed',{SPEED:id=>val(id,b,'SPEED','math_number',50)}); mk('flippermove_steer',{STEERING:id=>menu(id,'flippermove_rotation-wheel',num(b,'STEER',0)),VALUE:id=>val(id,b,'AMOUNT','math_number',10)},{UNIT:unitName(f('UNIT'))}); break;
+      case 'mv_start_steer_speed': note('“start moving … at % speed” became “set movement speed” + “start moving”');
+        mk('flippermove_movementSpeed',{SPEED:id=>val(id,b,'SPEED','math_number',50)}); mk('flippermove_startSteer',{STEERING:id=>menu(id,'flippermove_rotation-wheel',num(b,'STEER',0))}); break;
+      case 'mv_stop_method': mk('flippermoremove_movementSetStopMethod',null,{STOP:{coast:'0',brake:'1',hold:'2'}[f('M')]||'1'}); break;
+      case 'mv_accel': note('“set movement acceleration” was left out; set it in the SPIKE app if you need it'); break;
+      case 'mt_run_for': mk('flippermotor_motorTurnForDirection',{PORT:motorPort,DIRECTION:id=>menu(id,'flippermotor_custom-icon-direction',f('DIR')==='ccw'?'counterclockwise':'clockwise'),VALUE:id=>val(id,b,'AMOUNT','math_number',90)},{UNIT:f('UNIT')}); break;
+      case 'mt_run_for_speed': { const sp=num(b,'SPEED',75); note('“run for … at % speed” became “set speed” + “run”, so the new speed stays in effect afterwards');
+        mk('flippermotor_motorSetSpeed',{PORT:motorPort,SPEED:id=>[1,lit(Math.abs(sp))]}); mk('flippermotor_motorTurnForDirection',{PORT:motorPort,DIRECTION:id=>menu(id,'flippermotor_custom-icon-direction',sp<0?'counterclockwise':'clockwise'),VALUE:id=>val(id,b,'AMOUNT','math_number',90)},{UNIT:f('UNIT')}); break; }
+      case 'mt_start': mk('flippermotor_motorStartDirection',{PORT:motorPort,DIRECTION:id=>menu(id,'flippermotor_custom-icon-direction',f('DIR')==='ccw'?'counterclockwise':'clockwise')}); break;
+      case 'mt_start_speed': { const sp=num(b,'SPEED',75); mk('flippermotor_motorSetSpeed',{PORT:motorPort,SPEED:id=>[1,lit(Math.abs(sp))]}); mk('flippermotor_motorStartDirection',{PORT:motorPort,DIRECTION:id=>menu(id,'flippermotor_custom-icon-direction',sp<0?'counterclockwise':'clockwise')}); break; }
+      case 'mt_stop': mk('flippermotor_motorStop',{PORT:motorPort}); break;
+      case 'mt_speed': mk('flippermotor_motorSetSpeed',{PORT:motorPort,SPEED:id=>val(id,b,'SPEED','math_number',75)}); break;
+      case 'mt_goto': mk('flippermotor_motorGoDirectionToPosition',{PORT:motorPort,POSITION:id=>menu(id,'flippermotor_custom-angle',num(b,'POS',0))},{DIRECTION:{short:'shortest',cw:'clockwise',ccw:'counterclockwise'}[f('DIR')]||'shortest'}); break;
+      case 'mt_goto_rel': mk('flippermoremotor_motorGoToRelativePosition',{PORT:id=>menu(id,'flippermoremotor_multiple-port-selector',f('PORT')),POSITION:id=>val(id,b,'POS'),SPEED:id=>val(id,b,'SPEED','math_number',75)}); break;
+      case 'mt_set_rel': mk('flippermoremotor_motorSetDegreeCounted',{PORT:id=>menu(id,'flippermoremotor_multiple-port-selector',f('PORT')),VALUE:id=>val(id,b,'POS')}); break;
+      case 'my_fork_up': case 'my_fork_down': { const up=b.type==='my_fork_up', d=(up?1:-1)*(CFG.forkUp==='cw'?1:-1);
+        note('“fork all the way '+(up?'up':'down')+'” became “'+CFG.fork+' run 90 degrees”, since the SPIKE app has no such block');
+        mk('flippermotor_motorTurnForDirection',{PORT:id=>menu(id,'flippermotor_multiple-port-selector',CFG.fork),DIRECTION:id=>menu(id,'flippermotor_custom-icon-direction',d>0?'clockwise':'counterclockwise'),VALUE:id=>[1,lit(90)]},{UNIT:'degrees'}); break; }
+      case 'my_turn': { const deg=Math.abs(num(b,'DEG',90)), right=(f('DIR')==='right')!==(num(b,'DEG',90)<0);
+        note('“gyro turn” became “set yaw angle to 0”, “start moving”, “wait until yaw angle passes”, “stop moving”');
+        mk('flippersensors_resetYaw'); mk('flippermove_startMove',{DIRECTION:id=>menu(id,'flippermove_custom-icon-direction',right?'clockwise':'counterclockwise')});
+        mk('control_wait_until',{CONDITION:id=>{ const gt=add('operator_gt',id); const ab=add('operator_mathop',gt); blocks[ab].fields.OPERATOR=['abs',null]; const ax=add('flippersensors_orientationAxis',ab); blocks[ax].fields.AXIS=['yaw',null]; extensions.add('flippersensors');
+          blocks[ab].inputs.NUM=[3,ax,lit(0)]; blocks[gt].inputs.OPERAND1=[3,ab,lit('','text')]; blocks[gt].inputs.OPERAND2=[1,lit(deg-1,'text')]; return [2,gt]; }});
+        mk('flippermove_stopMove'); break; }
+      case 'lt_write': mk('flipperlight_lightDisplayText',{TEXT:id=>val(id,b,'TEXT','text','Hello')}); break;
+      case 'lt_clear': mk('flipperlight_lightDisplayOff'); break;
+      case 'lt_image': mk('flipperlight_lightDisplayImageOn',{MATRIX:id=>menu(id,'flipperlight_matrix-5x5-brightness-image',SPIKE_IMAGES[f('IMG')]||SPIKE_IMAGES['♥'])}); break;
+      case 'lt_image_for': mk('flipperlight_lightDisplayImageOnForTime',{MATRIX:id=>menu(id,'flipperlight_matrix-5x5-brightness-image',SPIKE_IMAGES[f('IMG')]||SPIKE_IMAGES['♥']),VALUE:id=>val(id,b,'SECS','math_number',2)}); break;
+      case 'lt_bright': mk('flipperlight_lightDisplaySetBrightness',{BRIGHTNESS:id=>val(id,b,'V','math_number',75)}); break;
+      case 'lt_pixel': mk('flipperlight_lightDisplaySetPixel',{X:id=>menu(id,'flipperlight_matrix-pixel-index',f('X')),Y:id=>menu(id,'flipperlight_matrix-pixel-index',f('Y')),BRIGHTNESS:id=>val(id,b,'V','math_number',100)}); break;
+      case 'lt_rotate': mk('flipperlight_lightDisplayRotate',{DIRECTION:id=>menu(id,'flipperlight_custom-icon-direction',f('DIR')==='ccw'?'counterclockwise':'clockwise')}); break;
+      case 'lt_orient': mk('flipperlight_lightDisplaySetOrientation',{ORIENTATION:id=>menuF(id,'flipperlight_menu_orientation','orientation',{up:'1',left:'2',right:'3',down:'4'}[f('O')]||'1')}); break;
+      case 'lt_center': mk('flipperlight_centerButtonLight',{COLOR:id=>menu(id,'flipperlight_color-selector-vertical',{green:'6',red:'9',blue:'3',yellow:'7',white:'10',off:'0'}[f('C')]||'6')}); break;
+      case 'lt_ultra': mk('flipperlight_ultrasonicLightUp',{PORT:id=>menu(id,'flipperlight_distance-sensor-selector',f('PORT')),VALUE:id=>menu(id,'flipperlight_led-selector',{all:'100 100 100 100',off:'0 0 0 0',top:'100 100 0 0',bottom:'0 0 100 100'}[f('P')]||'100 100 100 100')}); break;
+      case 'sd_beep': mk('flippersound_beepForTime',{NOTE:id=>menu(id,'flippersound_custom-piano',num(b,'NOTE',60)),DURATION:id=>val(id,b,'SECS','math_number',0.2)}); break;
+      case 'sd_beep_start': mk('flippersound_beep',{NOTE:id=>menu(id,'flippersound_custom-piano',num(b,'NOTE',60))}); break;
+      case 'sd_stop': mk('flippersound_stopSound'); break;
+      case 'sd_play': case 'sd_start_sound': note('Sound clips became beeps; pick the sound again in the SPIKE app');
+        mk(b.type==='sd_play'?'flippersound_beepForTime':'flippersound_beep',{NOTE:id=>menu(id,'flippersound_custom-piano',72),DURATION:id=>b.type==='sd_play'?[1,lit(0.5)]:null}); break;
+      case 'sd_effect_change': case 'sd_effect_set': case 'sd_effect_clear': case 'sd_vol_change': case 'sd_vol_set': note('Sound effect and volume blocks were left out'); break;
+      case 'ct_wait': mk('control_wait',{DURATION:id=>val(id,b,'SECS','math_positive_number',1)}); break;
+      case 'ct_repeat': mk('control_repeat',{TIMES:id=>val(id,b,'TIMES','math_whole_number',10),SUBSTACK:id=>sub(id,'DO')}); break;
+      case 'ct_forever': mk('control_forever',{SUBSTACK:id=>sub(id,'DO')}); break;
+      case 'ct_if': mk('control_if',{CONDITION:id=>boolv(id,b,'COND'),SUBSTACK:id=>sub(id,'DO')}); break;
+      case 'ct_ifelse': mk('control_if_else',{CONDITION:id=>boolv(id,b,'COND'),SUBSTACK:id=>sub(id,'DO'),SUBSTACK2:id=>sub(id,'ELSE')}); break;
+      case 'ct_wait_until': mk('control_wait_until',{CONDITION:id=>boolv(id,b,'COND')}); break;
+      case 'ct_repeat_until': mk('control_repeat_until',{CONDITION:id=>boolv(id,b,'COND'),SUBSTACK:id=>sub(id,'DO')}); break;
+      case 'ct_stop': mk('flippercontrol_stop',null,{STOP_OPTION:'all'}); break;
+      case 'ct_stop_opt': mk('flippercontrol_stop',null,{STOP_OPTION:f('OPT')==='this'?'this script':'all'}); break;
+      case 'ct_stop_other': mk('flippercontrol_stopOtherStacks'); break;
+      case 'ev_broadcast': case 'ev_broadcast_wait': { const msg=String(f('MSG')||'message1');
+        mk(b.type==='ev_broadcast'?'event_broadcast':'event_broadcastandwait',{BROADCAST_INPUT:id=>{ const sid=nid(); blocks[sid]={opcode:'event_broadcast_menu',next:null,parent:id,inputs:{},fields:{BROADCAST_OPTION:[msg,bcId(msg)]},shadow:true,topLevel:false}; return [1,sid]; }}); break; }
+      case 'sn_reset_yaw': mk('flippersensors_resetYaw'); break;
+      case 'sn_reset_timer': mk('flippersensors_resetTimer'); break;
+      case 'variables_set': { const vn=b.getField('VAR').getText(); mk('data_setvariableto',{VALUE:id=>val(id,b,'VALUE','text','0')},{VARIABLE:[vn,varId(vn)]}); break; }
+      case 'math_change': { const vn=b.getField('VAR').getText(); mk('data_changevariableby',{VALUE:id=>val(id,b,'DELTA','math_number',1)},{VARIABLE:[vn,varId(vn)]}); break; }
+      case 'procedures_callnoreturn': { const nm=b.getProcedureCall(), def=Blockly.Procedures.getDefinition(nm,ws), args=def?def.getVars():[];
+        const pc=[nm].concat(args.map(()=>'%s')).join(' '), ids=args.map((a,i)=>'arg_'+i+'_'+a.replace(/\W/g,''));
+        const id=mk('procedures_call'); blocks[id].mutation={tagName:'mutation',children:[],proccode:pc,argumentids:JSON.stringify(ids),warp:'false'};
+        args.forEach((a,i)=>{ blocks[id].inputs[ids[i]]=val(id,b,'ARG'+i,'text',''); }); break; }
+      default: note('“'+b.type+'” has no SPIKE match and was left out');
+    }
+    if(!out.length) return null;
+    for(let i=0;i<out.length;i++){ blocks[out[i]].parent=i?out[i-1]:parent; if(i) blocks[out[i-1]].next=out[i]; }
+    return [out[0],out[out.length-1]];
+  }
+  function chain(parent,b){ let first=null,last=null;
+    while(b){ if(b.isEnabled()){ const r=stmt(last||parent,b); if(r){ if(last) blocks[last].next=r[0]; else first=r[0]; blocks[r[0]].parent=last||parent; last=r[1]; } } b=b.getNextBlock(); }
+    return first?[first,last]:null; }
+  const hat=(b,x,y)=>{ const f=nm=>b.getFieldValue(nm);
+    const top=(op,fields)=>{ const id=add(op,null,{topLevel:true,x,y}); if(fields) for(const k in fields) blocks[id].fields[k]=Array.isArray(fields[k])?fields[k]:[fields[k],null]; return id; };
+    switch(b.type){
+      case 'ev_start': return top('flipperevents_whenProgramStarts');
+      case 'ev_button': return top('flipperevents_whenButton',{BUTTON:f('BTN'),EVENT:'pressed'});
+      case 'ev_color': { const id=top('flipperevents_whenColor'); blocks[id].inputs.PORT=menu(id,'flipperevents_color-sensor-selector',f('PORT')); blocks[id].inputs.OPTION=menu(id,'flipperevents_color-selector',SPIKE_COLOR_NUM[f('COLOR')]||'0'); return id; }
+      case 'ev_timer': { const id=top('flipperevents_whenTimer'); blocks[id].inputs.VALUE=val(id,b,'VAL','math_number',5); return id; }
+      case 'ev_cond': { const id=top('flipperevents_whenCondition'); const c=boolv(id,b,'COND'); if(c) blocks[id].inputs.CONDITION=c; return id; }
+      case 'ev_force': { const id=top('flipperevents_whenPressed',{OPTION:f('EV')}); blocks[id].inputs.PORT=menu(id,'flipperevents_force-sensor-selector',f('PORT')); return id; }
+      case 'ev_dist': { const id=top('flipperevents_whenDistance',{COMPARATOR:f('OP'),UNIT:f('UNIT')}); blocks[id].inputs.PORT=menu(id,'flipperevents_distance-sensor-selector',f('PORT')); blocks[id].inputs.VALUE=val(id,b,'VAL','math_number',15); return id; }
+      case 'ev_tilt': { const id=top('flipperevents_whenTilted'); blocks[id].inputs.VALUE=menu(id,'flipperevents_custom-tilted','1'); return id; }
+      case 'ev_orient': return top('flipperevents_whenOrientation',{VALUE:{left:'leftside',right:'rightside'}[f('FACE')]||f('FACE')});
+      case 'ev_gesture': return top('flipperevents_whenGesture',{EVENT:{shake:'shake',tap:'tapped',fall:'falling'}[f('G')]||'shake'});
+      case 'ev_receive': { const msg=String(f('MSG')||'message1'); return top('event_whenbroadcastreceived',{BROADCAST_OPTION:[msg,bcId(msg)]}); }
+      case 'procedures_defnoreturn': { const nm=b.getFieldValue('NAME'), args=b.getVars(), pc=[nm].concat(args.map(()=>'%s')).join(' '), ids=args.map((a,i)=>'arg_'+i+'_'+a.replace(/\W/g,''));
+        const id=top('procedures_definition'); const pid=nid();
+        blocks[pid]={opcode:'procedures_prototype',next:null,parent:id,inputs:{},fields:{},shadow:true,topLevel:false,mutation:{tagName:'mutation',children:[],proccode:pc,argumentids:JSON.stringify(ids),argumentnames:JSON.stringify(args),argumentdefaults:JSON.stringify(args.map(()=>'')),warp:'false'}};
+        args.forEach((a,i)=>{ const rid=nid(); blocks[rid]={opcode:'argument_reporter_string_number',next:null,parent:pid,inputs:{},fields:{VALUE:[a,null]},shadow:true,topLevel:false}; blocks[pid].inputs[ids[i]]=[1,rid]; });
+        blocks[id].inputs.custom_block=[1,pid]; return id; }
+    }
+    return null; };
+  let stacks=0;
+  ws.getTopBlocks(true).forEach(b=>{ if(!b.isEnabled()) return; const xy=b.getRelativeToSurfaceXY();
+    params=b.type==='procedures_defnoreturn'?b.getVars():[];
+    const h=hat(b,Math.round(xy.x),Math.round(xy.y)); if(!h){ if(b.outputConnection||b.previousConnection) note('Loose blocks not under a “when” block were left out'); return; }
+    stacks++; const body=chain(h,b.type==='procedures_defnoreturn'?b.getInputTargetBlock('STACK'):b.getNextBlock()); if(body) blocks[h].next=body[0]; params=[]; });
+  const costume={assetId:'d41d8cd98f00b204e9800998ecf8427e',name:'backdrop1',bitmapResolution:1,md5ext:'d41d8cd98f00b204e9800998ecf8427e.svg',dataFormat:'svg',rotationCenterX:240,rotationCenterY:180};
+  const project={targets:[
+      {isStage:true,name:'Stage',variables:stageVars,lists:{},broadcasts,blocks:{},comments:{},currentCostume:0,costumes:[costume],sounds:[],volume:100,layerOrder:0,tempo:60,videoTransparency:50,videoState:'on',textToSpeechLanguage:null},
+      {isStage:false,name:'Glow Bot Lab',variables:{},lists:{},broadcasts:{},blocks,comments:{},currentCostume:0,costumes:[Object.assign({},costume,{name:'costume1'})],sounds:[],volume:100,layerOrder:1,visible:true,x:0,y:0,size:100,direction:90,draggable:false,rotationStyle:'all around'}],
+    monitors:[],extensions:[...extensions],meta:{semver:'3.0.0',vm:'0.2.0-prerelease.20200512204241',agent:navigator.userAgent}};
+  const now=new Date().toISOString();
+  const pid=Array.from({length:12},()=>'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random()*62)]).join('');
+  const manifest={type:'word-blocks',autoDelete:false,created:now,lastsaved:now,size:0,id:pid,name,slotIndex:0,workspaceX:0,workspaceY:0,zoomLevel:0.7,showAllBlocks:false,version:38,hardware:{},extensions:[...extensions],
+    state:{playMode:'download',canvasDrawerTab:'monitorTab',canvasDrawerOpen:false,hasMonitors:false},extraFiles:[],lastConnectedHubType:'flipper'};
+  return {project,manifest,notes,stacks};
+}
+async function spikeFileBytes(name){
+  if(!window.JSZip) throw new Error('The file maker did not load. Check the internet connection and reload the page.');
+  const r=exportSpike(name); if(!r.stacks) throw new Error('There is nothing to save yet. Put your blocks under a “when program starts” block first.');
+  const inner=new JSZip(); inner.file('project.json',JSON.stringify(r.project)); inner.file('d41d8cd98f00b204e9800998ecf8427e.svg','');
+  const sb3=await inner.generateAsync({type:'uint8array',compression:'DEFLATE'});
+  const outer=new JSZip(); outer.file('manifest.json',JSON.stringify(r.manifest)); outer.file('scratch.sb3',sb3);
+  outer.file('icon.svg','<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect width="60" height="60" rx="12" fill="#FFD21F"/><circle cx="30" cy="30" r="12" fill="#fff" stroke="#3A2E00" stroke-width="5"/></svg>');
+  outer.file('monitors.json',JSON.stringify({display:{visible:false,viewMode:'In window',type:'image',content:'',hideImage:false,includedImages:[11],showImageSelector:false},linegraph:{visible:false,viewMode:'In window',lineVariant:0,data:[],splitMode:0,yAxisMode:0},bargraph:{visible:false,viewMode:'In window',data:{}}}));
+  const bytes=await outer.generateAsync({type:'uint8array',compression:'DEFLATE'});
+  return {bytes,notes:r.notes};
+}
+function spikeName(){ const who=store.me&&store.me!=='guest'?P().name+' - ':''; return (who+lvLabel(L)).replace(/[\\/:*?"<>|]+/g,'').slice(0,80); }
+function b64(bytes){ let s=''; for(let i=0;i<bytes.length;i+=0x8000) s+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000)); return btoa(s); }
+$('saveSpike').onclick=async()=>{
+  try{ const name=spikeName(), r=await spikeFileBytes(name), file=name+'.llsp3';
+    if(window.claude&&window.claude.use&&!SHEET_URL){ toast('Saving SPIKE files works on the team site (GitHub). Use “Publish to team Drive” or the team site link.'); return; }
+    const url=URL.createObjectURL(new Blob([r.bytes],{type:'application/octet-stream'})), a=document.createElement('a');
+    a.href=url; a.download=file; document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),30000);
+    toast('Saved “'+file+'”. Open it in the SPIKE app with File → Open.'+(r.notes.length?' Changed for SPIKE: '+r.notes.join('; ')+'.':''));
+  }catch(e){ toast(e&&e.message?e.message:'That program could not be saved.'); }
+};
+$('publishSpike').onclick=async()=>{
+  if(!back||back.kind!=='sheet'){ toast('Publishing needs the team board connected to the Google Sheet.'); return; }
+  if(!store.me||store.me==='guest'){ toast('Choose your name under “Coding as” first.'); return; }
+  try{ const name=spikeName(), r=await spikeFileBytes(name);
+    $('publishSpike').disabled=true;
+    const j=await back.publishFile({type:'file',name:name+'.llsp3',data:b64(r.bytes),player:P().name,slug:store.me,level:L.id});
+    toast('Published “'+name+'” to the team Drive folder'+(j&&j.folder?' “'+j.folder+'”':'')+'.'+(r.notes.length?' Changed for SPIKE: '+r.notes.join('; ')+'.':''));
+  }catch(e){ toast(/Unknown request|cannot be saved|DriveApp|permission/i.test(String(e&&e.message))?'The team Drive folder is not set up yet. Update the scoreboard script (see the setup notes).':'Could not publish right now: '+(e&&e.message||'try again')); }
+  finally{ $('publishSpike').disabled=false; }
+};
+
 /* ---------------- Robot setup ---------------- */
 (function(){
   const opt=(sel,list,none)=>{ sel.textContent=''; if(none){ const o=document.createElement('option'); o.value=''; o.textContent='none'; sel.append(o); } list.forEach(x=>{ const o=document.createElement('option'); o.value=x[1]; o.textContent=x[0]; sel.append(o); }); };
@@ -1591,7 +1830,7 @@ function frame(ts){
 requestAnimationFrame(frame);
 
 /* small hook for testing from the console */
-window.glowbot={importSpike:buf=>importSpike(buf),go(id){ setLevel(LEVELS.findIndex(l=>l.id===id)); },get ws(){return ws;},get world(){return W;},get robot(){return R;},run,setLevel,load:loadProgram,program,mk,
+window.glowbot={importSpike:buf=>importSpike(buf),exportSpike:n=>spikeFileBytes(n),go(id){ setLevel(LEVELS.findIndex(l=>l.id===id)); },get ws(){return ws;},get world(){return W;},get robot(){return R;},run,setLevel,load:loadProgram,program,mk,
   fast(maxSec){ let n=0; while(running&&n<maxSec/DT){ tick(); n++; } return {running,x:R.x,y:R.y,yaw:yaw(),arm:R.arm,missions:L.missions()}; }};
 })();
 </script>
