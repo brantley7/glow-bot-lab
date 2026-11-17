@@ -433,18 +433,18 @@ const allGates=()=>W.gates.every(g=>g.hit);
 /* One practice challenge per robot-game mission, on the full BIOGLOW field.
    [mission, id, name, start side, points needed, the models that belong to it, task, tip] */
 const MC=[
- [1,'m01','Drone Survey','L',20,['launch','map'],'Drive into the blue drone launcher from the west and push it until it stops. Bonus +10: flip the LiDAR map ▲ in the dashed survey box.','The launcher sits low on the south side, east of the big river. The robot starts with its side flat against the south wall in the left launch area, like your team lines it up, and drives straight east 35 inches into the launcher.',{x:26.5,y:106,d:0,arm:90}],
+ [1,'m01','Drone Survey','L',20,['launch','map'],'Push the red sled east along the drone’s track until it reaches the launcher. Bonus +10: flip the LiDAR map ▲ in the dashed survey box.','The launcher sits low on the south side, east of the big river. The robot starts with its side flat against the south wall in the left launch area, like your team lines it up, and drives straight east 35 inches into the launcher.',{x:26.5,y:106,d:0,arm:90}],
  [2,'m02','Exploding Seeds','L',30,['trig','s1','s2','s3','stalk'],'Lower the fork, slide it under the seed release ▲ on the south-west side of the stalk, and lift so all three seeds fly off.','The robot starts on a mark on the launch circle, aimed diagonally at the stalk, like your team lines it up. Your team’s program lowers the arm, drives 12.7 inches, lifts the arm until it stops, then backs up 15 inches.',{x:32.7,y:100.3,d:-41,arm:90}],
  [3,'m03','Flip the Rock','L',30,['rock'],'Lift the rock ▲ to drop the research flag, then lower the fork again to put the rock back.','The rock is against the west wall, just north of the left launch area. You can start lined up under it, facing north.'],
  [4,'m04','Lucky Leaves','L',30,['leafA','leafB','katy'],'Carry both leaves out of the nest and set them down. Leave the katydid (the one with eyes) exactly where it is.','The katydid sits in a different slot every run, so look before you plan. Come in from the south, fork down under a leaf, lift, back out, and set it down outside the dashed nest.'],
  [5,'m05','Reaching Roots','L',20,['root'],'Push the root knob north all the way to the wall.','Drive north on the same line as the knob with the fork up. Slow down for the last few centimetres.'],
- [6,'m06','Leafcutter Frenzy','L',40,['ant'],'Push the ant east along its track into the nest without losing any leaf fragments.','The ant is close to the north wall, so arrive already facing east, a little south of the ant. Turning on the spot next to it will knock it. Push at 25% speed or slower.'],
+ [6,'m06','Leafcutter Frenzy','L',40,['ant'],'Push the ant north-east up its ramp into the nest without losing any leaf fragments.','The ant sits at the bottom of a short ramp that climbs north-east to the nest by the north wall. Line up south-west of the ant, facing north-east, and push straight up the ramp at 25% speed or slower.'],
  [7,'m07','Humongous Fungus','R',20,['fungus'],'Slide the fork under the mycelium lever and lift it ▲.','Come from the south facing north. Lower the fork before you reach the lever, creep forward, then lift. Keep clear of the building on the mine dock to the east.'],
- [8,'m08','Tangled','L',30,['vine'],'Slide the fork under the vine in front of the tree and lift it ▲ so it falls to the mat.','Come from the south facing north. Lower the fork far enough back that it does not hit the tree trunk.'],
- [9,'m09','Research Platform','L',30,['platform','camera','s4'],'Raise the research platform ▲, deploy the camera trap ▼, and knock the seed off the tree.','Three jobs at one tree. Plan an order that keeps the fork clear of the trunk, and don’t touch the spider habitat just to the east.'],
- [10,'m10','Fragile Microhabitats','L',20,['spider','snail'],'Drive through both photo rings, one beside each habitat, without moving either habitat.','Pure navigation. Plan a path, run it, and check the trail the robot leaves behind.'],
- [11,'m11','Window to the Past','R',20,['cover'],'Lower the fork onto the root cover ▼ so it folds down to the mat.','Come from the south facing north. Stop with the fork over the cover, not over the tree behind it, then lower.'],
- [12,'m12','Forest Elder','R',30,['cane','tie'],'Lift the cane ▲, then carry the red support tie to the post and set it down.','Both are by the east wall. The post is just south of the tie, so after lifting the tie a short drive backward may be all you need.'],
+ [8,'m08','Tangled','L',30,['vine'],'Slide the fork under the vine on the east side of the tree and lift it ▲ so it falls to the mat.','The vine hangs off the east side of the tree. Come from the south facing north, just east of the trunk, and lower the fork before you reach it. The snail habitat is right next to it, so stay to the west of the snail.'],
+ [9,'m09','Research Platform','L',30,['platform','camera','s4'],'Raise the research platform ▲, deploy the camera trap ▼, and knock the seed off the tree.','Three jobs at one tree. The platform is raised from under its front edge, south of the trunk. The camera trap and the seed are on the west side, so one fork drop there does the camera and one lift takes the seed. Keep clear of the snail habitat on the east side.'],
+ [10,'m10','Fragile Microhabitats','L',20,['spider','spiderA','spiderB','snail'],'Drive through both photo rings, one beside each habitat, without moving either habitat.','The snail habitat is beside the platform tree near the north wall; the spider habitat is a long frame lying diagonally north-east of the farm. Plan a path, run it, and check the trail the robot leaves behind.'],
+ [11,'m11','Window to the Past','R',20,['cover'],'Lower the fork onto the root cover ▼ so it folds down to the mat.','The model is turned so the root cover faces south-east. Come in from the south-east facing north-west, and lower the fork with the cover right at the tips, not over the model behind it.'],
+ [12,'m12','Forest Elder','R',30,['cane','tie'],'Lift the cane ▲, then carry the red support tie to the post and set it down.','The cane lies north of the tree; come from the west with the fork low, just north of the trunk. The red support tie lies just south of the tree and the post is about 16 cm south of it: lift the tie from the south, then back straight up to the post.'],
  [13,'m13','Keystone Species','L',30,['crate'],'Carry your keystone species to the restoration platform and set it down.','The robot starts holding the keystone species on its fork. Lower the fork only when the crate is over the dashed platform circle. Use the Docks button to practise each dock.'],
  [14,'m14','Seeds of Renewal','L',20,['s1','s2','s3','s4'],'Get two seeds into the replantation station and set them down on the mat.','The seeds from Exploding Seeds are already on the mat. Pick one up with the fork, carry it to the station, lower the fork, and go back for another.'],
  [15,'m15','Biocentric Architecture','R',40,['canopy','hatch','sky'],'Raise the nesting canopy ▲, open the compost hatch ▼ and push the garden skylight knob in, plus the bonus for this dock.','Where the building sits depends on the dock. Use the Docks button to practise all three.']
@@ -516,18 +516,18 @@ const LEVELS=[
   build:matchBuild,missions:matchMissions,tick:matchTick,paint:matchPaint,starter:()=>[]}
 ];
 /* ----- mission challenges ----- */
-const NAMES={wall:'the wall',stalk:'the seed stalk',drone:'the drone',map:'the LiDAR map',launch:'the drone launcher',trig:'the seed release',s1:'a seed',s2:'a seed',s3:'a seed',s4:'the tree seed',rock:'the rock',leafA:'a leaf',leafB:'a leaf',katy:'the katydid',
-  root:'the root',ant:'the ant',fungus:'the mycelium',vine:'the vine',platform:'the research tree',camera:'the camera trap',spider:'the spider habitat',snail:'the snail habitat',cover:'the root window',cane:'the cane',tie:'the support tie',crate:'the keystone',canopy:'the building',hatch:'the compost hatch',sky:'the skylight'};
+const NAMES={wall:'the wall',stalk:'the seed stalk',drone:'the drone',map:'the LiDAR map',launch:'the drone sled',trig:'the seed release',s1:'a seed',s2:'a seed',s3:'a seed',s4:'the tree seed',rock:'the rock',leafA:'a leaf',leafB:'a leaf',katy:'the katydid',
+  root:'the root',ant:'the ant',fungus:'the mycelium',vine:'the vine',platform:'the research tree',camera:'the camera trap',spider:'the spider habitat',spiderA:'the spider habitat',spiderB:'the spider habitat',launcher:'the drone launcher',snail:'the snail habitat',cover:'the root window',cane:'the cane',tie:'the support tie',crate:'the keystone',canopy:'the building',hatch:'the compost hatch',sky:'the skylight'};
 function chalBuild(){
   const d=matchBuild(), n=L.mission, crate=d.objs.find(o=>o.id==='crate');
   if(n!==13){ crate.ghost=true; crate.x=crate.y=-99; }
   if(n===14) [['s1',92,47],['s2',97,66],['s3',86,78]].forEach(a=>{ const o=d.objs.find(q=>q.id===a[0]); o.held=false; o.x=a[1]; o.y=a[2]; });
-  if(n===10) d.gates=[{x:108,y:20,r:7},{x:139,y:44,r:7}];
+  if(n===10) d.gates=[{x:106,y:22,r:7},{x:142,y:46,r:7}];
   return d;
 }
 function disturbed(){ const own=L.own||[], out=[];
   for(const o of W.objs) if(!o.ghost&&own.indexOf(o.id)<0&&moved(o)>1) out.push(NAMES[o.id]||o.id);
-  for(const f of W.fix) if(own.indexOf(f.id)<0&&(f.done||f.stage>0)) out.push(NAMES[f.id]||f.id);
+  for(const f of W.fix) if(f.kind!=='art'&&own.indexOf(f.id)<0&&(f.done||f.stage>0)) out.push(NAMES[f.id]||f.id);
   return out.filter((v,i)=>out.indexOf(v)===i);
 }
 function fullyHome(){ if(!W.homes) return false; const c=[[BODY.x0,BODY.y0],[BODY.x0,BODY.y1],[BODY.x1,BODY.y0],[BODY.x1,BODY.y1]].map(p=>toWorld(p[0],p[1]));
@@ -547,42 +547,42 @@ function chalMissions(){
 /* ----- Match Day: the BIOGLOW field. Positions are measured from the field map in the official Robot Game Rulebook (table coordinates in cm; the mat is 202 cm wide and starts 17 cm from the left wall). ----- */
 const DOCKS={mine:{x:208,y:12,f:[-.7071,.7071],need:'canopy'},city:{x:147,y:105,f:[0,-1],need:'sky'},farm:{x:118,y:52,f:[-1,0],need:'hatch'}};
 const ORDERS=[['15','14','13'],['15','13','14'],['13','15','14'],['13','14','15'],['14','15','13'],['14','13','15']]; /* mine, city, farm */
-const NEST={x:24,y:7,w:24,h:10}, HABITAT={x:19,y:2,w:34,h:23}, POST={x:204,y:54};
+const NEST={x:25,y:8,w:10,h:10}, HABITAT={x:17,y:0,w:19,h:19}, POST={x:214,y:56};
 function matchBuild(){
   const ord=ORDERS[store.docks||0], at={}; ['mine','city','farm'].forEach((n,i)=>{ at[ord[i]]=Object.assign({name:n},DOCKS[n]); });
   const b=at['15'], p=[-b.f[1],b.f[0]], P=(fd,lat)=>[b.x+b.f[0]*fd+p[0]*lat,b.y+b.f[1]*fd+p[1]*lat];
-  const can=P(12,-8), hat=P(14,0), s0=P(15,6), s1=P(8,6), rail=(x0,y0,x1,y1)=>({x0,y0,x1,y1});
-  const slots=[29,36,43], kp=Math.floor(Math.random()*3), lx=slots.filter((v,i)=>i!==kp);
+  const can=P(12,-8), hat=P(14,0), s0=P(11,7), s1=P(5,7), rail=(x0,y0,x1,y1)=>({x0,y0,x1,y1});
+  const slots=[27,31,35], kp=Math.floor(Math.random()*3), lx=slots.filter((v,i)=>i!==kp);
   const tag=(d,t)=>{ const o=d.name==='farm'?[-8,-12]:[9,-8]; return {x:clamp(d.x+o[0],4,232),y:clamp(d.y+o[1],4,110),t}; };
   return {
    mat:{x:17,w:202},docks:at,
    homes:[{cx:17,cy:114,r:48.5,c:'red',col:'#C7362F',a0:-Math.PI/2,a1:0},{cx:219,cy:114,r:48.5,c:'blue',col:'#2A6FC9',a0:Math.PI,a1:Math.PI*1.5}],
-   lines:[{pts:[[64.6,33.3],[69.7,24.5],[93.7,24.5]],w:2.6,halo:true},{pts:[[151.9,17.4],[161.8,27.6],[186.3,27.6]],w:2.6,halo:true},{pts:[[112.7,73],[119.2,84.4]],w:2.6,halo:true}],
+   lines:[{pts:[[64.6,33.3],[69.7,24.5],[93.7,24.5]],w:2.6,halo:true},{pts:[[151.6,16.6],[160.6,26.5],[186.4,26.5]],w:2.6,halo:true},{pts:[[112.2,71.5],[118.7,83.8]],w:2.6,halo:true}],
    rivers:[{w:6,pts:[[66,114],[82,95],[97,79],[109,67],[121,63],[135,70],[139,87],[133,99],[125,114]]},{w:4,pts:[[117,0],[118,12],[124,34],[130,46],[123,60]]},
      {w:4.5,pts:[[130,46],[154,46],[174,44],[184,32],[186,15],[195,0]]},{w:3.5,pts:[[174,44],[192,40],[207,33],[219,22]]}],
-   paints:[{x:89,y:38,w:34,h:30,color:'yellow',paint:'#D9B77E'},{x:122,y:86,w:38,h:28,color:'white',paint:'#B4B8B8'},{x:176,y:52,w:19,h:14,color:'white',paint:'#B4B8B8'},{x:196,y:3,w:22,h:17,color:'yellow',paint:'#D98A3D'}],
-   zones:[Object.assign({outline:true},NEST),{x:115,y:86,w:12,h:12,outline:true,label:'SURVEY'},{x:at['13'].x,y:at['13'].y,r:7,outline:true,label:'PLATFORM'},{x:at['14'].x,y:at['14'].y,r:8,outline:true,label:'REPLANT'},{x:POST.x,y:POST.y,r:4,outline:true,label:'POST'}],
+   paints:[{x:89,y:38,w:34,h:30,color:'yellow',paint:'#D9B77E'},{x:122,y:86,w:38,h:28,color:'white',paint:'#B4B8B8'},{x:175,y:52,w:10,h:12,color:'green',paint:'#5DA453'},{x:196,y:3,w:22,h:17,color:'yellow',paint:'#D98A3D'}],
+   zones:[Object.assign({outline:true},NEST),{x:119.6,y:87.2,w:8,h:8,outline:true,label:'SURVEY'},{x:at['13'].x,y:at['13'].y,r:7,outline:true,label:'PLATFORM'},{x:at['14'].x,y:at['14'].y,r:8,outline:true,label:'REPLANT'},{x:POST.x,y:POST.y,r:4,outline:true,label:'POST'}],
    rocks:[{id:'stalk',x:79,y:60,r:4,col:'#6FA24A'}],
    objs:[
-    {id:'root',type:'knob',col:'#8A5A2B',x:58,y:13,r:3,rail:rail(58,13,58,5)},
-    {id:'ant',type:'knob',col:'#C7362F',x:144,y:11,r:3,rail:rail(144,11,155,11)},
-    {id:'launch',type:'knob',col:'#58BBEE',x:121,y:104,r:2.5,rail:rail(121,104,124,104)},
+    {id:'root',type:'knob',col:'#8A5A2B',x:53,y:12,r:3,rail:rail(53,12,53,5)},
+    {id:'ant',type:'knob',col:'#C7362F',x:162.4,y:17,r:3,rail:rail(162.4,17,169.5,10)},
+    {id:'launch',type:'knob',col:'#E0342B',x:79.3,y:108.7,r:2,rail:rail(79.3,108.7,126.8,108.7)},
     {id:'sky',type:'knob',col:'#E0483F',x:s0[0],y:s0[1],r:2.5,rail:rail(s0[0],s0[1],s1[0],s1[1])},
     {id:'s1',type:'seed',lift:true,held:true,x:85,y:53,r:2.2},{id:'s2',type:'seed',lift:true,held:true,x:87,y:60,r:2.2},{id:'s3',type:'seed',lift:true,held:true,x:84,y:67,r:2.2},
-    {id:'s4',type:'seed',lift:true,x:82.5,y:8,r:2.2},
-    {id:'leafA',type:'leaf',lift:true,x:lx[0],y:12,r:2.2},{id:'katy',type:'katy',lift:true,x:slots[kp],y:12,r:2.2},{id:'leafB',type:'leaf',lift:true,x:lx[1],y:12,r:2.2},
+    {id:'s4',type:'seed',lift:true,x:63,y:9,r:2.2},
+    {id:'leafA',type:'leaf',lift:true,x:lx[0],y:13,r:1.9},{id:'katy',type:'katy',lift:true,x:slots[kp],y:13,r:1.9},{id:'leafB',type:'leaf',lift:true,x:lx[1],y:13,r:1.9},
     {id:'crate',type:'pod',lift:true,x:40,y:76,r:3},
-    {id:'tie',type:'ring',lift:true,x:207.5,y:42,r:2.2},
-    {id:'spider',type:'fragile',icon:'#151a19',x:92,y:11,r:3.2},{id:'snail',type:'fragile',icon:'#F29A00',x:124,y:40,r:3.2}],
+    {id:'tie',type:'tie',lift:true,x:215.5,y:41.8,r:2.2},
+    {id:'snail',type:'fragile',icon:'#F29A00',x:89.5,y:10.5,r:3.2},{id:'spider',type:'spider',x:124.5,y:39,r:2},{id:'spiderA',type:'spider',x:121.3,y:41.9,r:2},{id:'spiderB',type:'spider',x:127.7,y:36.1,r:2}],
    fix:[
-    {id:'trig',kind:'lift',x:68.4,y:69.2},{id:'map',kind:'lift',x:121,y:92},
+    {id:'trig',kind:'lift',x:68.4,y:69.2},{id:'map',kind:'lift',x:122.4,y:91.5},
     {id:'rock',kind:'flip',x:23,y:56,bx:23,by:46,br:4.5,art:'rock'},
-    {id:'fungus',kind:'lift',x:180,y:19,bx:180,by:6,br:5,art:'box'},
-    {id:'platform',kind:'lift',x:78,y:18.8,bx:74,by:10,br:5.5,art:'tree'},{id:'camera',kind:'press',x:84,y:16},{id:'vine',kind:'lift',x:66,y:20},
-    {id:'cover',kind:'press',x:158,y:65,bx:158,by:53,br:5,art:'tree'},
-    {id:'cane',kind:'lift',x:218,y:42,bx:218,by:30,br:4.5,art:'tree'},
+    {id:'fungus',kind:'lift',x:179.5,y:16.5,bx:180.5,by:7,br:4.5,art:'box'},
+    {id:'platform',kind:'lift',x:73,y:16,bx:73,by:6.5,br:5,art:'tree'},{id:'camera',kind:'press',x:66,y:14},{id:'vine',kind:'lift',x:82,y:11},
+    {id:'cover',kind:'press',x:165.5,y:56.3,bx:159.2,by:54.7,br:4,art:'tree'},
+    {id:'cane',kind:'lift',x:213,y:29,bx:212.5,by:36.7,br:3.5,art:'tree'},{id:'launcher',kind:'art',x:132.6,y:109,bx:132.6,by:109,br:3.8,art:'pad'},
     {id:'canopy',kind:'lift',x:can[0],y:can[1],bx:b.x,by:b.y,br:6,art:'box'},{id:'hatch',kind:'press',x:hat[0],y:hat[1]}],
-   tags:[{x:105,y:103,t:'1'},{x:79,y:51,t:'2'},{x:31,y:47,t:'3'},{x:21,y:5,t:'4'},{x:51,y:5,t:'5'},{x:143,y:19,t:'6'},{x:189,y:5,t:'7'},{x:60,y:26,t:'8'},{x:95,y:19,t:'9'},{x:98,y:7,t:'10'},{x:130,y:35,t:'10'},{x:167,y:47,t:'11'},{x:227,y:30,t:'12'},
+   tags:[{x:106,y:100,t:'1'},{x:79,y:51,t:'2'},{x:31,y:47,t:'3'},{x:21,y:4,t:'4'},{x:59,y:7,t:'5'},{x:156,y:10,t:'6'},{x:189,y:5,t:'7'},{x:88,y:17,t:'8'},{x:60,y:20,t:'9'},{x:98,y:6,t:'10'},{x:134,y:43,t:'10'},{x:151,y:48,t:'11'},{x:205,y:46,t:'12'},
      tag(at['13'],'13'),tag(at['14'],'14'),tag(at['15'],'15')]
   };
 }
@@ -598,12 +598,13 @@ function matchTick(){
 }
 function matchPaint(c){
   const n=frags(), a=W.id.ant.rail;
-  c.fillStyle='#D9B77E'; rr(c,a.x1+4,a.y1-6,14,12,1.5); c.fill();
-  for(let i=0;i<4;i++){ c.fillStyle=i<n?['#F7CB2D','#F29A00','#4CAF68','#F4F4EE'][i]:'rgba(0,0,0,.18)'; c.beginPath(); c.ellipse(a.x1+6.5+i*3,a.y1,1,2.6,0,0,7); c.fill(); }
+  c.fillStyle='#D9B77E'; rr(c,164.5,.6,10.5,9.4,1.5); c.fill(); c.strokeStyle='rgba(120,90,40,.7)'; c.lineWidth=.5; c.setLineDash([1,1]); c.beginPath(); c.moveTo(a.x0,a.y0); c.lineTo(a.x1,a.y1); c.stroke(); c.setLineDash([]);
+  for(let i=0;i<4;i++){ c.fillStyle=i<n?['#F7CB2D','#F29A00','#4CAF68','#F4F4EE'][i]:'rgba(0,0,0,.18)'; c.beginPath(); c.ellipse(166.5+i*2.4,5,.9,2.4,0,0,7); c.fill(); }
   for(const s of [W.id.s1,W.id.s2,W.id.s3]) if(s.held){ c.strokeStyle='#8CC56B'; c.lineWidth=.6; c.beginPath(); c.moveTo(79,60); c.lineTo(s.x,s.y); c.stroke(); }
-  disk(c,129,104,3,'#7d8a86');
-  if(railT(W.id.launch)>=.97){ c.save(); c.shadowColor='#19C3B1'; c.shadowBlur=12; disk(c,129,104,2.6,'#8FF3E6'); c.restore(); }
-  else { c.strokeStyle='#151a19'; c.lineWidth=.8; c.beginPath(); c.moveTo(129,103.4); c.lineTo(80,109); c.moveTo(129,104.6); c.lineTo(80,110); c.stroke(); disk(c,79,109.5,2.3,'#58BBEE'); disk(c,79,109.5,1,'#12302B'); }
+  c.strokeStyle='#151a19'; c.lineWidth=.6; c.beginPath(); c.moveTo(77,106.8); c.lineTo(136,106.8); c.moveTo(77,111.5); c.lineTo(136,111.5); c.stroke();
+  const up=railT(W.id.launch)>=.97;
+  c.save(); if(up){ c.shadowColor='#19C3B1'; c.shadowBlur=12; } c.fillStyle=up?'#8FF3E6':'#DDE2E0'; rr(c,104,up?99.5:107,4,4,1); c.fill(); c.restore();
+  c.fillStyle='#151d1c'; [[103.6,up?99:106.6],[108.4,up?99:106.6],[103.6,up?104:111.4],[108.4,up?104:111.4]].forEach(q=>{ c.beginPath(); c.arc(q[0],q[1],1,0,7); c.fill(); });
 }
 function matchMissions(){
   const o=W.id, at=W.docks, M=(label,how,pts,max)=>({label,how,pts,max});
@@ -617,16 +618,16 @@ function matchMissions(){
   return [
    M('Equipment inspection','Robot and equipment fit in one launch area under 12 in. Yours does.',20,20),
    M('Precision tokens: '+W.tokens+' of 6 left','You lose one each time you relaunch a robot that stopped outside home.',[0,10,15,25,35,50,50][W.tokens],50),
-   M('M01 Drone Survey','Drone no longer touching the mat 20: drive into the blue launcher lever from the west ▶ and push it until it stops. Bonus +10: flip the LiDAR map ▲ in the survey area.',railT(o.launch)>=.97?20+(o.map.done?10:0):0,30),
+   M('M01 Drone Survey','Drone no longer touching the mat 20: push the red sled east along the drone’s track ▶ until it reaches the launcher. Bonus +10: flip the LiDAR map ▲ in the survey area.',railT(o.launch)>=.97?20+(o.map.done?10:0):0,30),
    M('M02 Exploding Seeds','10 for each seed off the stalk: lower the fork, slide it under the seed release ▲ on the south-west side of the stalk, and lift. The seeds fly out and can be collected for mission 14.',seedsOut*10,30),
    M('M03 Flip the Rock','Research flag down 20: lift the rock ▲. Bonus +10: lower the fork again to put the rock back.',o.rock.stage>=1?20+(o.rock.stage===2?10:0):0,30),
    M('M04 Lucky Leaves','One leaf carried out of the nest 10. Second leaf too, with the katydid (the bright one with eyes) never moved, +20. The referee shuffles where it sits each match. Katydid outside the marked habitat: zero.',m4,30),
    M('M05 Reaching Roots','Push the root knob toward the wall. Partly extended 10, completely extended 20.',rt>=.97?20:rt>=.3?10:0,20),
-   M('M06 Leafcutter Frenzy','Push the ant east along its track into the nest: 10 for each leaf fragment still in the nest. Move too quickly and the leaves scatter.',railT(o.ant)>=.97?10*frags():0,40),
+   M('M06 Leafcutter Frenzy','Push the ant north-east up its ramp into the nest: 10 for each leaf fragment still in the nest. Move too quickly and the leaves scatter.',railT(o.ant)>=.97?10*frags():0,40),
    M('M07 Humongous Fungus','Mycelium completely extended 20: slide the fork under the lever arm and lift it ▲. The +10 connection bonus needs an opposing team.',o.fungus.done?20:0,20),
-   M('M08 Tangled','Vine touching the mat 30: slide the fork under the vine beside the tree and lift it free ▲.',o.vine.done?30:0,30),
+   M('M08 Tangled','Vine touching the mat 30: slide the fork under the vine on the east side of the tree and lift it free ▲.',o.vine.done?30:0,30),
    M('M09 Research Platform','Platform raised ▲ 10, camera trap deployed ▼ 10, seed knocked off the tree 10.',(o.platform.done?10:0)+(o.camera.done?10:0)+(moved(o.s4)>3?10:0),30),
-   M('M10 Fragile Microhabitats','Spider habitat and snail habitat each score 10 if they have not been moved. Drive around them.',(moved(o.spider)<.6?10:0)+(moved(o.snail)<.6?10:0),20),
+   M('M10 Fragile Microhabitats','Spider habitat and snail habitat each score 10 if they have not been moved. Drive around them.',(['spider','spiderA','spiderB'].every(k=>moved(o[k])<.6)?10:0)+(moved(o.snail)<.6?10:0),20),
    M('M11 Window to the Past','Root cover down, touching the mat 20: lower the fork on it ▼.',o.cover.done?20:0,20),
    M('M12 Forest Elder','Cane completely raised ▲ 20. Support tie (red ring) carried to the post and set down 10.',(o.cane.done?20:0)+(!o.tie.car&&Math.hypot(o.tie.x-POST.x,o.tie.y-POST.y)<=5?10:0),30),
    M('M13 Keystone Species ('+at['13'].name+' dock)','Carry your keystone crate from the left launch area and set it on the restoration platform 30.',!o.crate.car&&inside(pf,o.crate.x,o.crate.y)?30:0,30),
@@ -747,7 +748,8 @@ function physics(dt){
     const strain=(R.arm<=0&&R.armRate<0)?'down':(R.arm>=90&&R.armRate>0)?'up':(R.armRate<0&&R.arm===a0&&a0>0)?'object':null;
     if(strain){ W.strainT=(W.strainT||0)+dt; if(W.strainT>.2&&!W.strainOn){ W.strainOn=true; armProblem(strain); } } else { W.strainT=0; W.strainOn=false; }
     if(a0<22&&R.arm>=22){
-      for(const o of W.objs) if(o.lift&&!o.car&&!o.held&&!o.ghost&&inFork(o.x,o.y)){ const l=toLocal(o.x,o.y); o.car=true; o.cl=[l[0]-9.5,l[1]]; o.vx=o.vy=0; W.lifted=true; }
+      { let best=null, bd=1e9; for(const o of W.objs) if(o.lift&&!o.car&&!o.held&&!o.ghost&&inFork(o.x,o.y)){ const d=Math.abs(toLocal(o.x,o.y)[1]); if(d<bd){ bd=d; best=o; } }
+        if(best){ const l=toLocal(best.x,best.y); best.car=true; best.cl=[l[0]-9.5,l[1]]; best.vx=best.vy=0; W.lifted=true; } }
       for(const f of W.fix) if(inFork(f.x,f.y)){ if(f.kind==='lift'&&!f.done){ f.done=true; burst(f.x,f.y,14); } else if(f.kind==='flip'&&f.stage===0){ f.stage=1; burst(f.x,f.y,14); } }
     }
     if(a0>12&&R.arm<=12){
@@ -1097,6 +1099,7 @@ function draw(now){
   for(const p of W.parts){ c.globalAlpha=Math.max(0,p.life); c.fillStyle=p.c; c.fillRect(p.x-.7,p.y-.7,1.4,1.4); } c.globalAlpha=1;
 }
 function drawFix(c,f){
+  if(f.kind==='art'){ disk(c,f.bx,f.by,f.br,'#8E9896'); disk(c,f.bx,f.by,f.br*.55,'#5F6B68'); return; }
   const done=f.kind==='flip'?f.stage===2:f.done, half=f.kind==='flip'&&f.stage===1;
   f.anim+=((done?1:half?.5:0)-f.anim)*.12;
   if(f.br){
@@ -1118,6 +1121,8 @@ function drawObj(c,o,sc){
   else if(o.type==='knob'){ disk(c,.3,.4,r,'rgba(0,0,0,.25)'); disk(c,0,0,r,o.col); disk(c,0,0,r*.45,'rgba(255,255,255,.6)'); }
   else if(o.type==='leaf'){ c.fillStyle='#1F8A3C'; c.beginPath(); c.ellipse(0,.6,r*.8,r*1.5,0,0,7); c.fill(); c.strokeStyle='#BFE8A8'; c.lineWidth=.3; c.beginPath(); c.moveTo(0,-.8); c.lineTo(0,2.6); c.stroke(); loop(0,-r*.9); }
   else if(o.type==='katy'){ c.fillStyle='#8BE04F'; c.beginPath(); c.ellipse(0,.6,r*.8,r*1.5,0,0,7); c.fill(); disk(c,-.7,-.4,.4,'#12302B'); disk(c,.7,-.4,.4,'#12302B'); loop(0,-r*.9); }
+  else if(o.type==='tie'){ c.fillStyle='#E0342B'; rr(c,-4.7,-1.1,9.4,2.2,1); c.fill(); }
+  else if(o.type==='spider'){ const ok=['spider','spiderA','spiderB'].every(k=>moved(W.id[k])<.6); c.fillStyle='#F4F4EE'; rr(c,-r,-r,r*2,r*2,.6); c.fill(); c.strokeStyle=ok?'#7A5A30':'#E0342B'; c.lineWidth=ok?.5:.9; c.stroke(); if(o.id==='spider') disk(c,0,0,1,'#151a19'); }
   else if(o.type==='ring'){ c.strokeStyle='#E0342B'; c.lineWidth=1.1; c.beginPath(); c.arc(0,0,r,0,7); c.stroke(); }
   else if(o.type==='fragile'){ const ok=moved(o)<.6; c.fillStyle='#F4F4EE'; rr(c,-r,-r,r*2,r*2,.9); c.fill(); c.strokeStyle=ok?'#6B7A75':'#E0342B'; c.lineWidth=ok?.4:.9; c.stroke(); disk(c,0,0,1.2,o.icon); }
   else { disk(c,.4,.5,r+1.2,'rgba(0,0,0,.18)'); c.strokeStyle='#12302B'; c.lineWidth=1.3; c.beginPath(); c.arc(0,0,r+.6,0,7); c.stroke(); disk(c,0,0,r,'#1D5148'); c.save(); c.shadowColor='#FFD21F'; c.shadowBlur=8; disk(c,0,0,1.5,'#FFE66B'); c.restore(); }
