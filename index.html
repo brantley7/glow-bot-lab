@@ -1,0 +1,1069 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+/* Base reset: the same small reset the claude.ai version gets from its viewer. */
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px/1.4 system-ui,sans-serif}
+img{max-width:100%}
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Glow Bot Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@600;700;800&display=swap">
+<style>
+/* Layout: a workbench. Practice mat and robot read-outs on the left, block code on the right; stacked on phones. */
+:root{
+  --bg:#EAF2EE; --panel:#FFFFFF; --ink:#12302B; --muted:#52706A; --line:#CBDAD3;
+  --hub:#FFD21F; --hub-ink:#3A2E00; --azure:#1279B5; --magenta:#C92A78; --go:#178A4C; --stop:#C7362F;
+  --display:"Fredoka","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0C1917; --panel:#132522; --ink:#E7F3EE; --muted:#93AEA6; --line:#27433C;
+  --hub:#FFD21F; --hub-ink:#3A2E00; --azure:#58BBEE; --magenta:#F26AAE; --go:#2FB56C; --stop:#EE635B; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0C1917; --panel:#132522; --ink:#E7F3EE; --muted:#93AEA6; --line:#27433C;
+  --hub:#FFD21F; --hub-ink:#3A2E00; --azure:#58BBEE; --magenta:#F26AAE; --go:#2FB56C; --stop:#EE635B; color-scheme:dark }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;font-weight:600;line-height:1.4}
+.app{height:100%;display:flex;flex-direction:column;gap:10px;padding-block:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2{font-family:var(--display);margin:0;text-wrap:balance}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--azure);outline-offset:2px}
+
+.top{display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.mark{width:30px;height:30px;border-radius:8px;background:var(--hub);display:grid;place-items:center;flex:none}
+.mark i{width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid var(--hub-ink)}
+h1{font-size:22px;font-weight:600;letter-spacing:.2px}
+.season{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.levels{display:flex;gap:6px;overflow-x:auto;min-width:0;flex:1;padding:3px;scrollbar-width:thin}
+.lv{flex:none;border:2px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 12px;font-weight:800;font-size:13px;white-space:nowrap}
+.lv .st{color:var(--muted);margin-left:4px;letter-spacing:1px;font-size:11px}
+.lv[aria-current="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.lv[aria-current="true"] .st{color:var(--hub)}
+.lv .st.won{color:#C99700}
+
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(340px,44%) 1fr;gap:14px}
+.stage{min-width:0;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:2px}
+.fieldwrap{position:relative;border-radius:10px;overflow:hidden;border:3px solid var(--ink);background:#F3F7EC;flex:none}
+#field{display:block;width:100%;max-width:100%}
+#field.drag{touch-action:none;cursor:grab}
+#banner{background:var(--ink);color:var(--bg);border-radius:10px;padding:9px 12px;flex:none;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-weight:800}
+#banner.win{background:var(--hub);color:var(--hub-ink)}
+#banner .msg{flex:1;min-width:0}
+#banner button{border:0;border-radius:8px;padding:6px 12px;background:var(--panel);color:var(--ink);font-weight:800}
+
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:2px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 13px;font-weight:800;min-height:42px}
+.btn.go{background:var(--go);border-color:var(--go);color:#fff;font-family:var(--display);font-size:17px;padding-inline:20px}
+.btn.go.on{background:var(--stop);border-color:var(--stop)}
+.tog{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);font-weight:700}
+.tog input{width:18px;height:18px;accent-color:var(--magenta)}
+
+.hud{display:flex;gap:6px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:13px;display:flex;gap:6px;align-items:center}
+.chip b{font-weight:800}
+.chip span.k{color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
+.sw{width:13px;height:13px;border-radius:3px;border:1px solid var(--muted);display:inline-block}
+.chip.big{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip.big span.k{color:inherit;opacity:.75}
+
+.goal{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.goal h2{font-size:18px;font-weight:600}
+.goal p{margin:0;max-width:62ch}
+#missions{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+#missions li{display:flex;gap:8px;align-items:baseline}
+#missions .box{flex:none;width:18px;height:18px;border-radius:5px;border:2px solid var(--line);display:inline-grid;place-items:center;font-size:12px;line-height:1;transform:translateY(3px)}
+#missions li.done .box{background:var(--go);border-color:var(--go);color:#fff}
+#missions .mt{min-width:0}
+#missions small{display:block;color:var(--muted);font-size:12.5px;font-weight:600;line-height:1.35}
+#missions .pts{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap}
+details{border-top:1px dashed var(--line);padding-top:8px}
+summary{cursor:pointer;font-weight:800;color:var(--azure)}
+details p,details ul{margin:6px 0 0;color:var(--muted)}
+details ul{padding-left:18px}
+.team h3{font-family:var(--display);font-size:15px;font-weight:600;margin:6px 0 0}
+.who{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.who label{font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.who select{font:inherit;font-weight:800;padding:7px 8px;border-radius:8px;border:2px solid var(--line);background:var(--bg);color:var(--ink);max-width:100%}
+.btn.sm{min-height:36px;padding:5px 10px;font-size:13px}
+.note{font-size:13px;color:var(--muted)}
+.tblwrap{overflow-x:auto}
+#board{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+#board th{text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:4px 8px 4px 0;white-space:nowrap}
+#board td{padding:6px 8px 6px 0;border-top:1px solid var(--line);white-space:nowrap}
+#board tr.me td{font-weight:800;color:var(--azure)}
+#board td.empty,#lib li.empty{color:var(--muted);white-space:normal}
+#lib{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+#lib li{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.link{border:0;background:none;padding:0;color:var(--muted);text-decoration:underline;font-size:13px;align-self:flex-start}
+
+.code{position:relative;min-width:0;min-height:0;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--panel)}
+#blockly{position:absolute;inset:0}
+.tip{position:absolute;right:10px;bottom:8px;font-size:12px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:3px 8px;pointer-events:none;opacity:.9}
+.blocklyTreeLabel{font-family:var(--display)!important;font-size:14px!important}
+.blocklyToolboxDiv{border-right:1px solid var(--line)}
+.blocklyTreeRow{height:30px!important;line-height:30px!important;margin-bottom:2px!important}
+
+#modal{position:fixed;inset:0;background:rgba(6,16,14,.55);display:grid;place-items:center;z-index:200;padding:16px}
+#modal form{background:var(--panel);border-radius:14px;padding:18px;width:min(380px,100%);display:flex;flex-direction:column;gap:12px;border:1px solid var(--line)}
+#modal input{font:inherit;padding:9px 10px;border-radius:8px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+#modal .row{display:flex;gap:8px;justify-content:flex-end}
+
+@media (max-width:900px){
+  .app{height:auto;min-height:100%}
+  main{display:flex;flex-direction:column}
+  .stage{overflow:visible;padding-right:0}
+  .controls{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding-block:6px}
+  .code{height:max(460px,78vh);flex:none}
+  h1{font-size:19px}
+  .levels{flex:1 1 100%}
+  .blocklyTreeLabel{font-size:12px!important}
+  .tip{display:none}
+}
+@media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto!important} }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="mark" aria-hidden="true"><i></i></span><h1>Glow Bot Lab</h1><span class="season">BIOGLOW practice</span></div>
+    <nav class="levels" id="levels" aria-label="Challenges"></nav>
+  </header>
+  <main>
+    <section class="stage" id="stage">
+      <div class="fieldwrap"><canvas id="field" aria-label="Practice mat with the robot"></canvas></div>
+      <div id="banner" role="status" hidden><span class="msg" id="bannerMsg"></span><button id="bannerBtn" type="button"></button></div>
+      <div class="controls">
+        <button id="run" class="btn go" type="button">▶ Run</button>
+        <button id="reset" class="btn" type="button">Reset mat</button>
+        <button id="speed" class="btn" type="button">Speed 1×</button>
+        <button id="zoom" class="btn" type="button">Zoom in</button>
+        <button id="docks" class="btn" type="button" hidden>Docks</button>
+        <label class="tog" for="wobble"><input type="checkbox" id="wobble"> Real-world wobble</label>
+        <label class="tog" for="jig" id="jigL" hidden><input type="checkbox" id="jig"> Launch jig</label>
+      </div>
+      <div class="hud" id="hud" aria-live="off">
+        <div class="chip big" id="cScore" hidden><span class="k">Score</span><b id="hScore">0</b></div>
+        <div class="chip big" id="cClock" hidden><span class="k">Match</span><b id="hClock">2:30</b></div>
+        <div class="chip"><span class="k">Yaw</span><b id="hYaw">0°</b></div>
+        <div class="chip"><span class="k">Sensor E</span><i class="sw" id="hSw"></i><b id="hCol">white</b><span id="hRef">92%</span></div>
+        <div class="chip"><span class="k">Fork C</span><b id="hArm">up</b></div>
+        <div class="chip"><span class="k">Timer</span><b id="hTime">0.0</b></div>
+        <div class="chip" id="cDisp" hidden><span class="k">Hub</span><b id="hDisp"></b></div>
+      </div>
+      <div class="goal">
+        <h2 id="lname"></h2>
+        <p id="lgoal"></p>
+        <ul id="missions"></ul>
+        <details id="hintbox"><summary>Need a hint?</summary><p id="lhint"></p></details>
+        <details><summary>Robot cheat sheet</summary>
+          <ul>
+            <li>One wheel rotation rolls the robot <b>17.5 cm</b>. 360 degrees is one rotation.</li>
+            <li>A quarter turn on the spot takes about <b>11 cm</b> of wheel travel (226 degrees).</li>
+            <li>Drive motors are on <b>A + B</b>. The fork arm is motor <b>C</b>: clockwise lifts it, 90 degrees is all the way up.</li>
+            <li>The color sensor is on port <b>E</b>, front right corner, looking down at the mat.</li>
+            <li>Faint squares on the mat are 10 cm wide.</li>
+            <li>On Match Day: ▲ lift with the fork from underneath, ▼ lower the fork onto it, round knobs get pushed along their track.</li>
+            <li>Drag a block back onto the block menu to delete it.</li>
+          </ul>
+        </details>
+        <details><summary>Stuck on the field? What the rules say</summary>
+          <ul>
+            <li>Wait until the robot, and anything it is touching, is <b>completely inside home</b>. Then you can pick it up for free.</li>
+            <li>Touching it anywhere else is an <b>interruption</b>. You must bring it home and relaunch, and if it was even partly outside home you lose one <b>precision token</b>.</li>
+            <li>You start with 6 tokens. Tokens left at the end score: 6 = 50, 5 = 50, 4 = 35, 3 = 25, 2 = 15, 1 = 10, 0 = 0. So the first rescue costs nothing, and the next costs 15 points.</li>
+            <li>Partly outside home: it goes back to that same home. Completely outside: you choose either home.</li>
+            <li>Anything the robot picked up out on the field after its last launch goes to the referee.</li>
+            <li>If you are not going to launch again, you may stop the robot where it is with no token lost.</li>
+            <li>Points earned by interrupting the robot do not count.</li>
+          </ul>
+        </details>
+        <button class="link" id="restart" type="button">Start this program over</button>
+      </div>
+      <div class="goal team">
+        <h2>Team scoreboard</h2>
+        <div class="who"><label for="me">Coding as</label><select id="me"></select><button class="btn sm" id="addMe" type="button">Add coder</button></div>
+        <p id="teamNote" class="note"></p>
+        <div class="tblwrap"><table id="board"><thead><tr><th>#</th><th>Coder</th><th>Stars</th><th>Solved</th><th>Match best</th></tr></thead><tbody id="boardBody"></tbody></table></div>
+        <h3>Team programs for this challenge</h3>
+        <ul id="lib"></ul>
+        <div class="who"><button class="btn sm" id="shareProg" type="button" hidden>Share my program</button><button class="btn sm" id="copyProg" type="button">Copy program text</button><button class="btn sm" id="pasteProg" type="button">Paste program text</button></div>
+      </div>
+    </section>
+    <section class="code"><div id="blockly"></div><div class="tip">Drag blocks under “when program starts”</div></section>
+  </main>
+</div>
+<div id="modal" hidden><form id="modalForm"><div id="modalMsg"></div><input id="modalIn" type="text" autocomplete="off"><div class="row"><button class="btn" type="button" id="modalNo">Cancel</button><button class="btn go" type="submit" id="modalOk">OK</button></div></form></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/blockly/10.4.3/blockly.min.js"></script>
+<script src="config.js"></script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const RAD=Math.PI/180, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* ---------------- robot constants (cm) ---------------- */
+const WHEEL_CM=17.5, TRACK=14, MAX_DPS=1000, ARM_DPS=240, DT=1/120;
+const BODY={x0:-9.5,x1:9.5,y0:-8,y1:8}, FORK_LEN=12, FORK_HALF=3.6, SENSOR={x:8.2,y:6.3};
+
+/* ---------------- saved progress ---------------- */
+let store={progs:{},stars:{},level:0,place:null,players:{},me:'guest',docks:0};
+try{ Object.assign(store, JSON.parse(localStorage.getItem('glowbot.v1')||'{}')); }catch(e){}
+const save=()=>{ try{ localStorage.setItem('glowbot.v1', JSON.stringify(store)); }catch(e){} };
+
+/* ---------------- block definitions ---------------- */
+const dd=(name,options)=>({type:'field_dropdown',name,options});
+const val=(name,check)=>check?{type:'input_value',name,check}:{type:'input_value',name};
+const S={previousStatement:null,nextStatement:null,inputsInline:true};
+const UNITS=[['cm','cm'],['rotations','rotations'],['degrees','degrees'],['seconds','seconds'],['inches','in']];
+const MUNITS=[['degrees','degrees'],['rotations','rotations'],['seconds','seconds']];
+const PORTC=[['C','C']], PORTE=[['E','E']];
+const SPIN=[['↻ clockwise','cw'],['↺ counterclockwise','ccw']];
+const COLORS=[['black','black'],['white','white'],['red','red'],['green','green'],['blue','blue'],['yellow','yellow'],['no color','none']];
+Blockly.defineBlocksWithJsonArray([
+ {type:'ev_start',message0:'when program starts',nextStatement:null,style:'ev'},
+ {type:'mv_move',message0:'move %1 for %2 %3',args0:[dd('DIR',[['↑ forward','fwd'],['↓ backward','back'],['↺ spin left','left'],['↻ spin right','right']]),val('AMOUNT'),dd('UNIT',UNITS)],...S,style:'mv'},
+ {type:'mv_steer',message0:'move steering %1 for %2 %3',args0:[val('STEER'),val('AMOUNT'),dd('UNIT',UNITS)],...S,style:'mv',tooltip:'Steering: 0 is straight, 100 spins right, -100 spins left.'},
+ {type:'mv_start_steer',message0:'start moving steering %1',args0:[val('STEER')],...S,style:'mv',tooltip:'Keeps moving until a stop block. 0 is straight.'},
+ {type:'mv_stop',message0:'stop moving',...S,style:'mv'},
+ {type:'mv_speed',message0:'set movement speed to %1 %',args0:[val('SPEED')],...S,style:'mv'},
+ {type:'mv_tank',message0:'move for %1 %2 at %3 %4 % speed',args0:[val('AMOUNT'),dd('UNIT',UNITS),val('L'),val('R')],...S,style:'mv',tooltip:'Left wheel speed, then right wheel speed.'},
+ {type:'mv_start_tank',message0:'start moving at %1 %2 % speed',args0:[val('L'),val('R')],...S,style:'mv'},
+ {type:'mv_rotcm',message0:'set 1 motor rotation to %1 cm moved',args0:[val('CM')],...S,style:'mv',tooltip:'Tells the hub how far one wheel turn rolls. Your wheels roll 17.5 cm.'},
+ {type:'mv_motors',message0:'set movement motors to %1',args0:[dd('PAIR',[['A+B','AB']])],...S,style:'mv',tooltip:'Your drive motors are plugged into ports A and B.'},
+ {type:'mt_run_for',message0:'%1 run %2 for %3 %4',args0:[dd('PORT',PORTC),dd('DIR',SPIN),val('AMOUNT'),dd('UNIT',MUNITS)],...S,style:'mt',tooltip:'Motor C is the fork arm. Clockwise lifts it.'},
+ {type:'mt_start',message0:'%1 start motor %2',args0:[dd('PORT',PORTC),dd('DIR',SPIN)],...S,style:'mt'},
+ {type:'mt_stop',message0:'%1 stop motor',args0:[dd('PORT',PORTC)],...S,style:'mt'},
+ {type:'mt_speed',message0:'%1 set speed to %2 %',args0:[dd('PORT',PORTC),val('SPEED')],...S,style:'mt'},
+ {type:'mt_goto',message0:'%1 go to position %2',args0:[dd('PORT',PORTC),val('POS')],...S,style:'mt',tooltip:'0 is fork down, 90 is fork all the way up.'},
+ {type:'mt_pos',message0:'%1 position',args0:[dd('PORT',PORTC)],output:'Number',style:'mt'},
+ {type:'lt_write',message0:'write %1',args0:[val('TEXT')],...S,style:'hub'},
+ {type:'sd_beep',message0:'play beep for %1 seconds',args0:[val('SECS')],...S,style:'hub'},
+ {type:'ct_wait',message0:'wait %1 seconds',args0:[val('SECS')],...S,style:'ct'},
+ {type:'ct_repeat',message0:'repeat %1',args0:[val('TIMES')],message1:'%1',args1:[{type:'input_statement',name:'DO'}],...S,style:'ct'},
+ {type:'ct_forever',message0:'forever',message1:'%1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,style:'ct'},
+ {type:'ct_if',message0:'if %1 then',args0:[val('COND','Boolean')],message1:'%1',args1:[{type:'input_statement',name:'DO'}],...S,style:'ct'},
+ {type:'ct_ifelse',message0:'if %1 then',args0:[val('COND','Boolean')],message1:'%1',args1:[{type:'input_statement',name:'DO'}],message2:'else',message3:'%1',args3:[{type:'input_statement',name:'ELSE'}],...S,style:'ct'},
+ {type:'ct_wait_until',message0:'wait until %1',args0:[val('COND','Boolean')],...S,style:'ct'},
+ {type:'ct_repeat_until',message0:'repeat until %1',args0:[val('COND','Boolean')],message1:'%1',args1:[{type:'input_statement',name:'DO'}],...S,style:'ct'},
+ {type:'ct_stop',message0:'stop all',previousStatement:null,style:'ct'},
+ {type:'sn_is_color',message0:'%1 is color %2 ?',args0:[dd('PORT',PORTE),dd('COLOR',COLORS)],output:'Boolean',style:'sn'},
+ {type:'sn_reflect_cmp',message0:'%1 reflection %2 %3 % ?',args0:[dd('PORT',PORTE),dd('OP',[['<','<'],['>','>'],['=','=']]),val('VAL')],output:'Boolean',inputsInline:true,style:'sn'},
+ {type:'sn_reflect',message0:'%1 reflected light',args0:[dd('PORT',PORTE)],output:'Number',style:'sn'},
+ {type:'sn_yaw',message0:'yaw angle',output:'Number',style:'sn',tooltip:'How far the robot has turned. Right is positive.'},
+ {type:'sn_reset_yaw',message0:'set yaw angle to 0',...S,style:'sn'},
+ {type:'sn_timer',message0:'timer',output:'Number',style:'sn'},
+ {type:'sn_reset_timer',message0:'reset timer',...S,style:'sn'},
+ {type:'op_arith',message0:'%1 %2 %3',args0:[val('A'),dd('OP',[['+','+'],['−','-'],['×','*'],['÷','/']]),val('B')],output:'Number',inputsInline:true,style:'op'},
+ {type:'op_cmp',message0:'%1 %2 %3',args0:[val('A'),dd('OP',[['<','<'],['=','='],['>','>']]),val('B')],output:'Boolean',inputsInline:true,style:'op'},
+ {type:'op_logic',message0:'%1 %2 %3',args0:[val('A','Boolean'),dd('OP',[['and','and'],['or','or']]),val('B','Boolean')],output:'Boolean',inputsInline:true,style:'op'},
+ {type:'op_not',message0:'not %1',args0:[val('A','Boolean')],output:'Boolean',inputsInline:true,style:'op'},
+ {type:'op_random',message0:'pick random %1 to %2',args0:[val('A'),val('B')],output:'Number',inputsInline:true,style:'op'},
+ {type:'my_turn',message0:'gyro turn %1 by %2 degrees',args0:[dd('DIR',[['↻ right','right'],['↺ left','left']]),val('DEG')],...S,style:'my',tooltip:'A My Block: spins until the gyro says the turn is done.'},
+ {type:'my_fork_up',message0:'fork all the way up',...S,style:'my'},
+ {type:'my_fork_down',message0:'fork all the way down',...S,style:'my'}
+]);
+const DEF={mv_move:{AMOUNT:10},mv_steer:{STEER:30,AMOUNT:10},mv_start_steer:{STEER:0},mv_speed:{SPEED:50},mv_tank:{AMOUNT:10,L:50,R:50},
+ mv_start_tank:{L:50,R:50},mv_rotcm:{CM:17.5},mt_run_for:{AMOUNT:90},mt_speed:{SPEED:75},mt_goto:{POS:90},lt_write:{TEXT:'Hi'},sd_beep:{SECS:0.2},
+ ct_wait:{SECS:1},ct_repeat:{TIMES:4},sn_reflect_cmp:{VAL:50},op_arith:{A:1,B:1},op_cmp:{A:0,B:50},op_random:{A:1,B:10},my_turn:{DEG:90}};
+function mk(type,over,fields,extra){
+  const b={type}, d=DEF[type], inputs=Object.assign({},extra);
+  if(d) for(const k in d){ const v=(over&&k in over)?over[k]:d[k];
+    inputs[k]={shadow: typeof v==='string'?{type:'text',fields:{TEXT:v}}:{type:'math_number',fields:{NUM:v}}}; }
+  if(Object.keys(inputs).length) b.inputs=inputs;
+  if(fields) b.fields=fields;
+  return b;
+}
+const T=(type,over,fields)=>Object.assign({kind:'block'},mk(type,over,fields));
+const cat=(name,colour,contents)=>({kind:'category',name,colour,contents});
+const TOOLBOX={kind:'categoryToolbox',contents:[
+ cat('Motors','#0A84E0',[T('mt_run_for'),T('mt_run_for',null,{DIR:'ccw'}),T('mt_start'),T('mt_stop'),T('mt_speed'),T('mt_goto'),T('mt_pos')]),
+ cat('Movement','#E0399F',[T('mv_motors'),T('mv_rotcm'),T('mv_speed'),T('mv_move'),T('mv_move',{AMOUNT:11},{DIR:'right'}),T('mv_steer'),T('mv_start_steer'),T('mv_stop'),T('mv_tank'),T('mv_start_tank')]),
+ cat('Light & Sound','#8E5CF0',[T('lt_write'),T('sd_beep')]),
+ cat('Events','#C99700',[T('ev_start')]),
+ cat('Control','#F29A00',[T('ct_wait'),T('ct_repeat'),T('ct_forever'),T('ct_if'),T('ct_ifelse'),T('ct_wait_until'),T('ct_repeat_until'),T('ct_stop')]),
+ cat('Sensors','#17A9D1',[T('sn_is_color'),T('sn_reflect_cmp'),T('sn_reflect'),T('sn_yaw'),T('sn_reset_yaw'),T('sn_timer'),T('sn_reset_timer')]),
+ cat('Operators','#12A150',[T('op_arith'),T('op_cmp'),T('op_logic'),T('op_not'),T('op_random')]),
+ {kind:'category',name:'Variables',colour:'#F0802B',custom:'VARIABLE'},
+ cat('My Blocks','#F0525A',[T('my_turn'),T('my_fork_up'),T('my_fork_down')])
+]};
+function program(list){
+  let head=null; for(let i=list.length-1;i>=0;i--){ const b=Object.assign({},list[i]); if(head) b.next={block:head}; head=b; }
+  const s={type:'ev_start',x:24,y:24}; if(head) s.next={block:head};
+  return {blocks:{languageVersion:0,blocks:[s]}};
+}
+
+/* ---------------- challenges ---------------- */
+let L, W, R;
+const onPad=p=>Math.hypot(R.x-p.x,R.y-p.y)<=p.r-2;
+const inside=(z,x,y)=>z.r?Math.hypot(x-z.x,y-z.y)<=z.r:(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h);
+const allGates=()=>W.gates.every(g=>g.hit);
+const LEVELS=[
+ {id:'roll',name:'First Roll',w:160,h:90,par:2,start:{x:22,y:45,d:0,arm:90},
+  goal:'Drive forward and stop on the glowing pad.',
+  hint:'One wheel rotation rolls the robot 17.5 cm, and the pad is exactly 5 rotations away. Change the number, or switch cm to rotations.',
+  build:()=>({pads:[{x:109.5,y:45,r:9}]}),
+  missions:()=>[{label:'Stop on the pad',done:onPad(W.pads[0])}],
+  starter:()=>[mk('mv_move',{AMOUNT:10})]},
+ {id:'turn',name:'Corner Turn',w:160,h:90,par:4,start:{x:22,y:70,d:0,arm:90},
+  goal:'Go around the corner and park on the pad.',
+  hint:'Drive forward, spin left a quarter turn, then drive again. A quarter turn is about 11 cm of wheel travel. The gyro turn block in My Blocks also works.',
+  build:()=>({pads:[{x:112,y:24,r:9}],rocks:[{x:66,y:40,r:6}]}),
+  missions:()=>[{label:'Stop on the pad',done:onPad(W.pads[0])}],
+  starter:()=>[mk('mv_move',{AMOUNT:20})]},
+ {id:'slalom',name:'Rock Slalom',w:160,h:90,par:7,start:{x:18,y:45,d:0,arm:90},
+  goal:'Weave through both glow rings, then park on the pad without bumping anything.',
+  hint:'The steering block drives in a curve: negative numbers curve left, positive curve right. Try steering -30 for a while, then +30.',
+  build:()=>({pads:[{x:142,y:45,r:9}],rocks:[{x:60,y:47,r:7},{x:104,y:43,r:7}],gates:[{x:60,y:20,r:10},{x:104,y:70,r:10}]}),
+  missions:()=>[{label:'Pass ring 1 (above the first rock)',done:W.gates[0].hit},{label:'Pass ring 2 (below the second rock)',done:W.gates[1].hit},{label:'Stop on the pad',done:onPad(W.pads[0])},{label:'No bumps',done:W.bumps===0}],
+  starter:()=>[mk('mv_steer',{STEER:-30,AMOUNT:20})]},
+ {id:'fork',name:'Fork Lift',w:160,h:90,par:5,start:{x:20,y:45,d:0,arm:0},
+  goal:'Slide the fork under the firefly crate, lift it, and set it down in the blue nest.',
+  hint:'The fork starts down. Drive until the prongs are under the crate, run motor C clockwise 90 degrees to lift, drive to the nest, then run C counterclockwise to set it down.',
+  build:()=>({zones:[{x:126,y:45,r:12,color:'blue',label:'NEST'}],objs:[{type:'pod',lift:true,x:70,y:45,r:3}]}),
+  missions:()=>[{label:'Lift the crate',done:W.lifted},{label:'Crate set down in the nest',done:!W.objs[0].car&&Math.hypot(W.objs[0].x-126,W.objs[0].y-45)<=10}],
+  starter:()=>[mk('mv_move',{AMOUNT:10}),mk('mt_run_for',{AMOUNT:90})]},
+ {id:'line',name:'Line Stopper',w:160,h:90,par:5,start:{x:20,y:45,d:0,arm:90},
+  goal:'Stop with the color sensor on the black line. The line moves every time, so measuring will not work!',
+  hint:'Use “start moving”, then “wait until E is color black”, then “stop moving”.',
+  build:()=>{ const x=82+Math.round(Math.random()*50); return {lines:[{pts:[[x,8],[x,82]],w:3}]}; },
+  missions:()=>[{label:'Sensor is on the black line',done:sense().c==='black'},{label:'No bumps',done:W.bumps===0}],
+  starter:()=>[mk('mv_start_steer')]},
+ {id:'follow',name:'Line Follower',w:180,h:100,par:7,live:true,start:{x:19.8,y:43.7,d:0,arm:90},
+  goal:'Follow the winding black line through both rings to the pad.',
+  hint:'Zig-zag along the edge of the line. Inside the forever loop: if the sensor sees black, start moving with steering 35, else start moving with steering -35. A slower movement speed makes it smoother.',
+  build:()=>{ const pts=[]; for(let x=28;x<=150;x+=2) pts.push([x,50+18*Math.sin((x-28)/122*2*Math.PI)]);
+    return {lines:[{pts,w:3}],pads:[{x:160,y:52,r:11}],gates:[{x:58.5,y:68,r:13},{x:119.5,y:32,r:13}]}; },
+  missions:()=>[{label:'Pass ring 1',done:W.gates[0].hit},{label:'Pass ring 2',done:W.gates[1].hit},{label:'Reach the pad',done:Math.hypot(R.x-160,R.y-52)<=11}],
+  starter:()=>[{type:'ct_forever',inputs:{DO:{block:{type:'ct_ifelse',inputs:{COND:{block:{type:'sn_is_color',fields:{COLOR:'black'}}}}}}}}]},
+ {id:'square',name:'Square Patrol',w:160,h:110,par:4,start:{x:42,y:84,d:0,arm:90},
+  goal:'Patrol the square through all three rings and finish back on the pad. Can you do it with one repeat loop?',
+  hint:'Each side of the square is 55 cm. Put one move and one quarter turn to the left inside “repeat 4”.',
+  build:()=>({pads:[{x:42,y:84,r:10}],gates:[{x:97,y:84,r:9},{x:97,y:29,r:9},{x:42,y:29,r:9}]}),
+  missions:()=>[{label:'Pass all three rings',done:allGates()},{label:'Finish on the pad',done:onPad(W.pads[0])&&allGates()}],
+  starter:()=>[mk('ct_repeat',{TIMES:4},null,{DO:{block:mk('mv_move',{AMOUNT:20})}})]},
+ {id:'launch',name:'Same Start',w:160,h:90,par:2,sloppy:true,streak:3,start:{x:16,y:45,d:0,arm:90},
+  goal:'Stop on the small pad three runs in a row. The program is already right. The catch: the robot is set down by eye, so each run it sits a little crooked, just like at a real table.',
+  hint:'Tick “Launch jig” next to the Run button. On the real table that means: push the back of the robot flat against the wall, line one side up with a LEGO jig or a mark on the mat, let go the same way every time, and keep hands off before you press start. Starting the program with “set yaw angle to 0” gives the gyro the same zero every time too.',
+  build:()=>({pads:[{x:121,y:45,r:6}]}),
+  missions:()=>[{label:'On the pad 3 runs in a row ('+(streaks.launch||0)+' so far)',done:(streaks.launch||0)>=3}],
+  starter:()=>[mk('mv_move',{AMOUNT:6},{UNIT:'rotations'})]},
+ {id:'home',name:'There and Back',w:160,h:100,par:4,start:{x:24,y:78,d:0,arm:90},
+  goal:'Drive out through the ring, then come all the way back so the whole robot is inside the launch area. A robot that makes it home can be picked up for free.',
+  hint:'The easiest way home is the way you came: drive the same distance backward. Aim for the middle of the launch area, not its edge, so a small error still ends inside. Open “Stuck on the field?” below to see what the rules say when it does not make it.',
+  build:()=>({homes:[{cx:0,cy:100,r:48.5,c:'red',col:'#C7362F',a0:-Math.PI/2,a1:0}],gates:[{x:120,y:30,r:10}]}),
+  missions:()=>[{label:'Pass through the ring',done:W.gates[0].hit},{label:'Whole robot back inside the launch area',done:W.gates[0].hit&&allInHome()},{label:'No bumps',done:W.bumps===0}],
+  starter:()=>[mk('my_turn',{DEG:20},{DIR:'left'}),mk('mv_move',{AMOUNT:40})]},
+ {id:'match',name:'Match Day',w:236,h:114,match:true,drag:true,clock:150,start:{x:34,y:98,d:0,arm:90},
+  goal:'The BIOGLOW robot game. All 15 missions sit where the official field map puts them and score the official points. You get 2:30 of run time and can launch from either launch area as often as you like. Drag the robot to place it, tap it to turn it.',
+  hint:'▲ means slide the fork underneath and lift. ▼ means hold the fork above and lower it. Round knobs on dashed tracks get pushed to the end stop. Things with loops (leaves, seeds, the keystone crate, the support tie) ride on the fork. The mat reads green to the sensor, rivers read blue, the black lines have white edges, and the bare table beside the mat reads black. The Docks button changes which of missions 13, 14 and 15 sits on the mine, city and farm docks.',
+  build:matchBuild,missions:matchMissions,tick:matchTick,paint:matchPaint,starter:()=>[]}
+];
+/* ----- Match Day: the BIOGLOW field. Positions are measured from the field map in the official Robot Game Rulebook (table coordinates in cm; the mat is 202 cm wide and starts 17 cm from the left wall). ----- */
+const DOCKS={mine:{x:208,y:12,f:[-.7071,.7071],need:'canopy'},city:{x:147,y:105,f:[0,-1],need:'sky'},farm:{x:118,y:52,f:[-1,0],need:'hatch'}};
+const ORDERS=[['15','14','13'],['15','13','14'],['13','15','14'],['13','14','15'],['14','15','13'],['14','13','15']]; /* mine, city, farm */
+const NEST={x:24,y:7,w:24,h:10}, HABITAT={x:19,y:2,w:34,h:23}, POST={x:204,y:54};
+function matchBuild(){
+  const ord=ORDERS[store.docks||0], at={}; ['mine','city','farm'].forEach((n,i)=>{ at[ord[i]]=Object.assign({name:n},DOCKS[n]); });
+  const b=at['15'], p=[-b.f[1],b.f[0]], P=(fd,lat)=>[b.x+b.f[0]*fd+p[0]*lat,b.y+b.f[1]*fd+p[1]*lat];
+  const can=P(13,-9), hat=P(13,0), s0=P(20,9), s1=P(10,9), rail=(x0,y0,x1,y1)=>({x0,y0,x1,y1});
+  const slots=[29,36,43], kp=Math.floor(Math.random()*3), lx=slots.filter((v,i)=>i!==kp);
+  const tag=(d,t)=>({x:clamp(d.x+9,4,232),y:clamp(d.y-8,4,110),t});
+  return {
+   mat:{x:17,w:202},docks:at,
+   homes:[{cx:17,cy:114,r:48.5,c:'red',col:'#C7362F',a0:-Math.PI/2,a1:0},{cx:219,cy:114,r:48.5,c:'blue',col:'#2A6FC9',a0:Math.PI,a1:Math.PI*1.5}],
+   lines:[{pts:[[64.6,33.3],[69.7,24.5],[93.7,24.5]],w:2.6,halo:true},{pts:[[151.9,17.4],[161.8,27.6],[186.3,27.6]],w:2.6,halo:true},{pts:[[112.7,73],[119.2,84.4]],w:2.6,halo:true}],
+   rivers:[{w:6,pts:[[66,114],[82,95],[97,79],[109,67],[121,63],[135,70],[139,87],[133,99],[125,114]]},{w:4,pts:[[117,0],[118,12],[124,34],[130,46],[123,60]]},
+     {w:4.5,pts:[[130,46],[154,46],[174,44],[184,32],[186,15],[195,0]]},{w:3.5,pts:[[174,44],[192,40],[207,33],[219,22]]}],
+   paints:[{x:89,y:38,w:34,h:30,color:'yellow',paint:'#D9B77E'},{x:122,y:86,w:38,h:28,color:'white',paint:'#B4B8B8'},{x:176,y:52,w:19,h:14,color:'white',paint:'#B4B8B8'},{x:196,y:3,w:22,h:17,color:'yellow',paint:'#D98A3D'}],
+   zones:[Object.assign({outline:true},NEST),{x:115,y:86,w:12,h:12,outline:true,label:'SURVEY'},{x:at['13'].x,y:at['13'].y,r:7,outline:true,label:'PLATFORM'},{x:at['14'].x,y:at['14'].y,r:8,outline:true,label:'REPLANT'},{x:POST.x,y:POST.y,r:4,outline:true,label:'POST'}],
+   rocks:[{x:79,y:60,r:4,col:'#6FA24A'}],
+   objs:[
+    {id:'root',type:'knob',col:'#8A5A2B',x:58,y:13,r:3,rail:rail(58,13,58,5)},
+    {id:'ant',type:'knob',col:'#C7362F',x:146,y:11,r:3,rail:rail(146,11,157,11)},
+    {id:'trig',type:'knob',col:'#B7D94A',x:64,y:60,r:2.5,rail:rail(64,60,73,60)},
+    {id:'sky',type:'knob',col:'#E0483F',x:s0[0],y:s0[1],r:2.5,rail:rail(s0[0],s0[1],s1[0],s1[1])},
+    {id:'s1',type:'seed',lift:true,held:true,x:82,y:56,r:2.2},{id:'s2',type:'seed',lift:true,held:true,x:84,y:61,r:2.2},{id:'s3',type:'seed',lift:true,held:true,x:81,y:65,r:2.2},
+    {id:'s4',type:'seed',lift:true,x:82.5,y:8,r:2.2},
+    {id:'leafA',type:'leaf',lift:true,x:lx[0],y:12,r:2.2},{id:'katy',type:'katy',lift:true,x:slots[kp],y:12,r:2.2},{id:'leafB',type:'leaf',lift:true,x:lx[1],y:12,r:2.2},
+    {id:'crate',type:'pod',lift:true,x:56,y:100,r:3},
+    {id:'tie',type:'ring',lift:true,x:207.5,y:42,r:2.2},
+    {id:'spider',type:'fragile',icon:'#151a19',x:92,y:11,r:3.2},{id:'snail',type:'fragile',icon:'#F29A00',x:124,y:40,r:3.2}],
+   fix:[
+    {id:'drone',kind:'press',x:131,y:97,bx:131,by:108,br:4,art:'pad'},{id:'map',kind:'lift',x:121,y:92},
+    {id:'rock',kind:'flip',x:23,y:56,bx:23,by:46,br:4.5,art:'rock'},
+    {id:'fungus',kind:'lift',x:180,y:19,bx:180,by:6,br:5,art:'box'},
+    {id:'platform',kind:'lift',x:76,y:22,bx:74,by:10,br:5.5,art:'tree'},{id:'camera',kind:'press',x:84,y:16},{id:'vine',kind:'lift',x:66,y:16},
+    {id:'cover',kind:'press',x:158,y:65,bx:158,by:53,br:5,art:'tree'},
+    {id:'cane',kind:'lift',x:218,y:42,bx:218,by:30,br:4.5,art:'tree'},
+    {id:'canopy',kind:'lift',x:can[0],y:can[1],bx:b.x,by:b.y,br:6,art:'box'},{id:'hatch',kind:'press',x:hat[0],y:hat[1]}],
+   tags:[{x:105,y:103,t:'1'},{x:79,y:51,t:'2'},{x:31,y:47,t:'3'},{x:21,y:5,t:'4'},{x:51,y:5,t:'5'},{x:151,y:20,t:'6'},{x:189,y:5,t:'7'},{x:61,y:20,t:'8'},{x:89,y:21,t:'9'},{x:98,y:7,t:'10'},{x:130,y:35,t:'10'},{x:167,y:47,t:'11'},{x:227,y:30,t:'12'},
+     tag(at['13'],'13'),tag(at['14'],'14'),tag(at['15'],'15')]
+  };
+}
+function railT(o){ const a=o.rail; return Math.hypot(o.x-a.x0,o.y-a.y0)/Math.hypot(a.x1-a.x0,a.y1-a.y0); }
+const moved=o=>Math.hypot(o.x-o.sx,o.y-o.sy);
+function frags(){ const p=W.antPeak; return p>30?0:p>23?1:p>18?2:p>13?3:4; }
+function matchTick(){
+  const o=W.id;
+  if(!W.katyOut&&!inside(NEST,o.katy.x,o.katy.y)) W.katyOut=true;
+  const a=o.ant, sp=Math.hypot(a.x-(a.px===undefined?a.x:a.px),a.y-(a.py===undefined?a.y:a.py))/DT; a.px=a.x; a.py=a.y; if(sp>W.antPeak) W.antPeak=sp;
+  const t=railT(o.trig), dirs=[[.45,-.9],[.95,.3],[.1,1]];
+  [o.s1,o.s2,o.s3].forEach((s,i)=>{ if(s.held&&t>=(i+1)/3-.03){ s.held=false; s.vx=dirs[i][0]*55; s.vy=dirs[i][1]*55; burst(s.x,s.y,8); } });
+}
+function matchPaint(c){
+  const n=frags(), a=W.id.ant.rail;
+  c.fillStyle='#D9B77E'; rr(c,a.x1+4,a.y1-6,14,12,1.5); c.fill();
+  for(let i=0;i<4;i++){ c.fillStyle=i<n?['#F7CB2D','#F29A00','#4CAF68','#F4F4EE'][i]:'rgba(0,0,0,.18)'; c.beginPath(); c.ellipse(a.x1+6.5+i*3,a.y1,1,2.6,0,0,7); c.fill(); }
+  for(const s of [W.id.s1,W.id.s2,W.id.s3]) if(s.held){ c.strokeStyle='#8CC56B'; c.lineWidth=.6; c.beginPath(); c.moveTo(79,60); c.lineTo(s.x,s.y); c.stroke(); }
+  if(W.id.drone.done){ c.save(); c.shadowColor='#19C3B1'; c.shadowBlur=12; disk(c,131,108,2.6,'#8FF3E6'); c.restore(); }
+  else { c.strokeStyle='#151a19'; c.lineWidth=.8; c.beginPath(); c.moveTo(131,107.4); c.lineTo(80,109); c.moveTo(131,108.6); c.lineTo(80,110); c.stroke(); disk(c,79,109.5,2.3,'#58BBEE'); disk(c,79,109.5,1,'#12302B'); }
+}
+function matchMissions(){
+  const o=W.id, at=W.docks, M=(label,how,pts,max)=>({label,how,pts,max});
+  const out=l=>!l.car&&!inside({x:NEST.x-2,y:NEST.y-2,w:NEST.w+4,h:NEST.h+4},l.x,l.y), nl=(out(o.leafA)?1:0)+(out(o.leafB)?1:0);
+  const katyBad=o.katy.car||!inside(HABITAT,o.katy.x,o.katy.y);
+  const m4=katyBad?0:(nl>=1?10:0)+(nl===2&&!W.katyOut&&moved(o.katy)<1?20:0);
+  const rt=railT(o.root), st={x:at['14'].x,y:at['14'].y,r:8}, pf={x:at['13'].x,y:at['13'].y,r:7};
+  const m14=[o.s1,o.s2,o.s3,o.s4].reduce((a,s)=>a+(!s.held&&inside(st,s.x,s.y)?(s.car?5:10):0),0);
+  const need=at['15'].need, can=o.canopy.done, sky=railT(o.sky)>=.97, hat=o.hatch.done, bonus=(need==='canopy'&&can)||(need==='sky'&&sky)||(need==='hatch'&&hat);
+  const seedsOut=[o.s1,o.s2,o.s3].filter(s=>!s.held).length;
+  return [
+   M('Equipment inspection','Robot and equipment fit in one launch area under 12 in. Yours does.',20,20),
+   M('Precision tokens: '+W.tokens+' of 6 left','You lose one each time you relaunch a robot that stopped outside home.',[0,10,15,25,35,50,50][W.tokens],50),
+   M('M01 Drone Survey','Drone no longer touching the mat 20: lower the fork on the launcher ▼ and the drone swings up. Bonus +10: flip the LiDAR map ▲ in the survey area.',o.drone.done?20+(o.map.done?10:0):0,30),
+   M('M02 Exploding Seeds','10 for each seed off the stalk: push the green trigger knob. The seeds fly out and can be collected for mission 14.',seedsOut*10,30),
+   M('M03 Flip the Rock','Research flag down 20: lift the rock ▲. Bonus +10: lower the fork again to put the rock back.',o.rock.stage>=1?20+(o.rock.stage===2?10:0):0,30),
+   M('M04 Lucky Leaves','One leaf carried out of the nest 10. Second leaf too, with the katydid (the bright one with eyes) never moved, +20. The referee shuffles where it sits each match. Katydid outside the marked habitat: zero.',m4,30),
+   M('M05 Reaching Roots','Push the root knob toward the wall. Partly extended 10, completely extended 20.',rt>=.97?20:rt>=.3?10:0,20),
+   M('M06 Leafcutter Frenzy','Push the ant east along its track into the nest: 10 for each leaf fragment still in the nest. Move too quickly and the leaves scatter.',railT(o.ant)>=.97?10*frags():0,40),
+   M('M07 Humongous Fungus','Mycelium completely extended 20: slide the fork under the lever arm and lift it ▲. The +10 connection bonus needs an opposing team.',o.fungus.done?20:0,20),
+   M('M08 Tangled','Vine touching the mat 30: slide the fork under the vine beside the tree and lift it free ▲.',o.vine.done?30:0,30),
+   M('M09 Research Platform','Platform raised ▲ 10, camera trap deployed ▼ 10, seed knocked off the tree 10.',(o.platform.done?10:0)+(o.camera.done?10:0)+(moved(o.s4)>3?10:0),30),
+   M('M10 Fragile Microhabitats','Spider habitat and snail habitat each score 10 if they have not been moved. Drive around them.',(moved(o.spider)<.6?10:0)+(moved(o.snail)<.6?10:0),20),
+   M('M11 Window to the Past','Root cover down, touching the mat 20: lower the fork on it ▼.',o.cover.done?20:0,20),
+   M('M12 Forest Elder','Cane completely raised ▲ 20. Support tie (red ring) carried to the post and set down 10.',(o.cane.done?20:0)+(!o.tie.car&&Math.hypot(o.tie.x-POST.x,o.tie.y-POST.y)<=5?10:0),30),
+   M('M13 Keystone Species ('+at['13'].name+' dock)','Carry your keystone crate from the left launch area and set it on the restoration platform 30.',!o.crate.car&&inside(pf,o.crate.x,o.crate.y)?30:0,30),
+   M('M14 Seeds of Renewal ('+at['14'].name+' dock)','Each seed in the replantation station 5, plus 5 if it is touching the mat (not still on the fork). Seeds come from missions 2 and 9.',m14,40),
+   M('M15 Biocentric Architecture ('+at['15'].name+' dock)','Nesting canopy raised ▲ 10, compost hatch opened ▼ 10, garden skylight knob pushed in 10. Bonus +10 on this dock for the '+(need==='canopy'?'nesting canopy':need==='sky'?'garden skylight':'compost hatch')+'.',(can?10:0)+(sky?10:0)+(hat?10:0)+(bonus?10:0),40)
+  ];
+}
+const maxScore=()=>L.missions().reduce((a,m)=>a+(m.max||0),0);
+
+/* ---------------- world ---------------- */
+function resetWorld(){
+  const d=L.build();
+  W={t:0,timer0:0,lines:d.lines||[],zones:d.zones||[],paints:d.paints||[],rivers:d.rivers||[],pads:d.pads||[],rocks:d.rocks||[],homes:d.homes||null,mat:d.mat||null,tags:d.tags||[],docks:d.docks||null,
+     objs:(d.objs||[]).map(o=>Object.assign({sx:o.x,sy:o.y,vx:0,vy:0,car:false},o)),fix:(d.fix||[]).map(f=>Object.assign({done:false,stage:0,anim:0},f)),
+     gates:(d.gates||[]).map(g=>Object.assign({hit:false},g)),bumps:0,wasBump:false,bumpFlash:0,clock:L.clock||0,display:'',trail:[],vars:{},lifted:false,parts:[],
+     tokens:6,launched:false,katyOut:false,antPeak:0,id:{}};
+  for(const o of W.objs) if(o.id) W.id[o.id]=o;
+  for(const f of W.fix) if(f.id) W.id[f.id]=f;
+  W.fixed=W.rocks.map(r=>({x:r.x,y:r.y,r:r.r})).concat(W.fix.filter(f=>f.br).map(f=>({x:f.bx,y:f.by,r:f.br})));
+  placeRobot(); hideBanner();
+}
+function homeOK(x,y){ return !!W.homes&&W.homes.some(h=>Math.hypot(x-h.cx,y-h.cy)<=h.r-11.4)&&x>=13&&x<=L.w-13&&y<=L.h-13; }
+function inHome(x,y){ return !W.mat||x<W.mat.x||x>W.mat.x+W.mat.w||W.homes.some(h=>Math.hypot(x-h.cx,y-h.cy)<=h.r); }
+function placeRobot(){
+  let s=L.start; if(L.drag&&store.place&&W&&homeOK(store.place.x,store.place.y)) s=store.place;
+  R={x:s.x,y:s.y,th:s.d*RAD,th0:s.d*RAD,wl:0,wr:0,arm:L.start.arm,armRate:0,moveSpeed:50,armSpeed:75,rotCm:17.5,slipL:1,slipR:1};
+  if(W){ W.trail=[]; for(const o of W.objs) o.car=false; }
+}
+const toLocal=(px,py)=>{ const dx=px-R.x,dy=py-R.y,c=Math.cos(R.th),s=Math.sin(R.th); return [dx*c+dy*s,-dx*s+dy*c]; };
+const toWorld=(lx,ly)=>{ const c=Math.cos(R.th),s=Math.sin(R.th); return [R.x+lx*c-ly*s,R.y+lx*s+ly*c]; };
+function distSeg(px,py,a,b){ const dx=b[0]-a[0],dy=b[1]-a[1],l2=dx*dx+dy*dy; let t=l2?((px-a[0])*dx+(py-a[1])*dy)/l2:0; t=clamp(t,0,1); return Math.hypot(px-a[0]-t*dx,py-a[1]-t*dy); }
+function polyDist(px,py,pts){ let d=1e9; for(let i=1;i<pts.length;i++) d=Math.min(d,distSeg(px,py,pts[i-1],pts[i])); return d; }
+const REFL={red:48,green:30,blue:20,yellow:78,white:92,black:5};
+function sampleAt(x,y){
+  if(x<0||y<0||x>L.w||y>L.h) return {c:'none',r:0};
+  let d=1e9, halo=false;
+  for(const ln of W.lines){ const q=polyDist(x,y,ln.pts)-ln.w/2; if(q<d){ d=q; halo=!!ln.halo; } }
+  let bg={c:'white',r:92};
+  const z=W.zones.find(z=>z.color&&inside(z,x,y))||W.paints.find(z=>inside(z,x,y));
+  if(W.mat){
+    const h=W.homes.find(h=>Math.hypot(x-h.cx,y-h.cy)<=h.r);
+    if(x<W.mat.x||x>W.mat.x+W.mat.w) bg={c:'black',r:5};
+    else if(h){ if(Math.hypot(x-h.cx,y-h.cy)>=h.r-1.4) bg={c:h.c,r:REFL[h.c]}; }
+    else if(W.rivers.some(r=>polyDist(x,y,r.pts)<r.w/2)) bg={c:'blue',r:20};
+    else if(z) bg={c:z.color,r:REFL[z.color]};
+    else bg={c:'green',r:30};
+  } else if(z) bg={c:z.color,r:REFL[z.color]};
+  if(d<=0) return {c:'black',r:6};
+  if(halo) return d<1.2?{c:'white',r:92}:bg;
+  if(d<0.9){ const r=6+d/0.9*(bg.r-6); return {c:r<bg.r*.55?'black':bg.c,r:Math.round(r)}; }
+  return bg;
+}
+function sense(){ const p=toWorld(SENSOR.x,SENSOR.y); return sampleAt(p[0],p[1]); }
+function yaw(){ let d=(R.th-R.th0)/RAD; d=((d+180)%360+360)%360-180; return Math.round(d); }
+
+function pushOut(lx,ly,r,q){
+  const cx=clamp(lx,q.x0,q.x1),cy=clamp(ly,q.y0,q.y1),dx=lx-cx,dy=ly-cy,d2=dx*dx+dy*dy;
+  if(d2>=r*r) return null;
+  if(d2>1e-9){ const d=Math.sqrt(d2),k=(r-d)/d; return [dx*k,dy*k]; }
+  const o=[[q.x1-lx+r,0],[-(lx-q.x0+r),0],[0,q.y1-ly+r],[0,-(ly-q.y0+r)]];
+  return o.reduce((a,b)=>Math.abs(a[0])+Math.abs(a[1])<Math.abs(b[0])+Math.abs(b[1])?a:b);
+}
+function sep(o,f,moveOther){ const dx=o.x-f.x,dy=o.y-f.y,d=Math.hypot(dx,dy)||1e-6,min=o.r+f.r; if(d>=min) return;
+  const k=(min-d)/d; if(moveOther){ f.x-=dx*k; f.y-=dy*k; f.x=clamp(f.x,f.r,L.w-f.r); f.y=clamp(f.y,f.r,L.h-f.r); } else { o.x+=dx*k; o.y+=dy*k; } }
+function constrain(o){
+  if(o.rail){ const a=o.rail,dx=a.x1-a.x0,dy=a.y1-a.y0,t=clamp(((o.x-a.x0)*dx+(o.y-a.y0)*dy)/(dx*dx+dy*dy),0,1); o.x=a.x0+t*dx; o.y=a.y0+t*dy; return; }
+  o.x=clamp(o.x,o.r,L.w-o.r); o.y=clamp(o.y,o.r,L.h-o.r);
+  for(const f of W.fixed) sep(o,f,false);
+  for(const p of W.objs){ if(p===o||p.car||p.held||p.rail) continue; sep(o,p,true); }
+}
+function blocked(){
+  const len=FORK_LEN*Math.cos(R.arm*RAD), fork={x0:9.5,x1:9.5+len,y0:-FORK_HALF,y1:FORK_HALF}, down=R.arm<25&&len>.5;
+  const c=Math.cos(R.th),s=Math.sin(R.th);
+  const pts=[[BODY.x0,BODY.y0],[BODY.x0,BODY.y1],[BODY.x1,BODY.y0],[BODY.x1,BODY.y1]];
+  if(len>.5) pts.push([fork.x1,fork.y0],[fork.x1,fork.y1]);
+  for(const p of pts){ const x=R.x+p[0]*c-p[1]*s,y=R.y+p[0]*s+p[1]*c; if(x<0||y<0||x>L.w||y>L.h) return true; }
+  for(const f of W.fixed){ const l=toLocal(f.x,f.y); if(pushOut(l[0],l[1],f.r,BODY)) return true; if(down&&pushOut(l[0],l[1],f.r,fork)) return true; }
+  for(const o of W.objs){ if(o.car||o.held) continue;
+    for(let pass=0;pass<2;pass++){
+      const l=toLocal(o.x,o.y); let pv=pushOut(l[0],l[1],o.r,BODY);
+      if(!pv&&down&&!o.lift) pv=pushOut(l[0],l[1],o.r,fork);
+      if(!pv) break;
+      if(pass===1){ if(Math.hypot(pv[0],pv[1])>.12) return true; break; }
+      o.x+=pv[0]*c-pv[1]*s; o.y+=pv[0]*s+pv[1]*c; constrain(o);
+    } }
+  return false;
+}
+const inFork=(x,y)=>{ const l=toLocal(x,y); return l[0]>=9.5&&l[0]<=22.5&&Math.abs(l[1])<=4.4; };
+function physics(dt){
+  if(R.wl||R.wr){
+    const px=R.x,py=R.y,pt=R.th;
+    const vl=R.wl/360*WHEEL_CM*R.slipL, vr=R.wr/360*WHEEL_CM*R.slipR, v=(vl+vr)/2, om=(vl-vr)/TRACK;
+    R.th+=om*dt; R.x+=v*Math.cos(R.th)*dt; R.y+=v*Math.sin(R.th)*dt;
+    if(blocked()){ R.x=px;R.y=py;R.th=pt; if(!W.wasBump){ W.bumps++; W.bumpFlash=.35; } W.wasBump=true; } else W.wasBump=false;
+    const tr=W.trail, last=tr[tr.length-1];
+    if(!last||Math.hypot(last[0]-R.x,last[1]-R.y)>1.5){ tr.push([R.x,R.y]); if(tr.length>1500) tr.shift(); }
+  }
+  if(R.armRate){
+    const a0=R.arm; R.arm=clamp(a0+R.armRate*dt,0,90);
+    if(R.arm<a0&&blocked()) R.arm=a0;
+    if(a0<22&&R.arm>=22){
+      for(const o of W.objs) if(o.lift&&!o.car&&!o.held&&inFork(o.x,o.y)){ const l=toLocal(o.x,o.y); o.car=true; o.cl=[l[0]-9.5,l[1]]; o.vx=o.vy=0; W.lifted=true; }
+      for(const f of W.fix) if(inFork(f.x,f.y)){ if(f.kind==='lift'&&!f.done){ f.done=true; burst(f.x,f.y,14); } else if(f.kind==='flip'&&f.stage===0){ f.stage=1; burst(f.x,f.y,14); } }
+    }
+    if(a0>12&&R.arm<=12){
+      for(const o of W.objs) o.car=false;
+      for(const f of W.fix) if(inFork(f.x,f.y)){ if(f.kind==='press'&&!f.done){ f.done=true; burst(f.x,f.y,14); } else if(f.kind==='flip'&&f.stage===1){ f.stage=2; burst(f.x,f.y,10); } }
+    }
+  }
+  for(const o of W.objs){
+    if(o.car){ const p=toWorld(9.5+o.cl[0]*Math.cos(R.arm*RAD)/.927,o.cl[1]); o.x=p[0]; o.y=p[1]; }
+    else if(o.vx||o.vy){ o.x+=o.vx*dt; o.y+=o.vy*dt; const k=Math.exp(-3*dt); o.vx*=k; o.vy*=k; if(Math.hypot(o.vx,o.vy)<1) o.vx=o.vy=0; constrain(o); }
+  }
+  for(const g of W.gates) if(!g.hit&&Math.hypot(R.x-g.x,R.y-g.y)<=g.r){ g.hit=true; burst(g.x,g.y,8); }
+  if(L.tick) L.tick();
+}
+
+/* ---------------- program runner ---------------- */
+const STOP={};
+let ws, running=false, threads=[], speed=1, acc=0, curBlock=null, shownBlock=null, driveTok=0, armTok=0, audio=null;
+const num=(b,n)=>{ const v=Number(ev(b.getInputTargetBlock(n))); return isFinite(v)?v:0; };
+const bool=(b,n)=>!!ev(b.getInputTargetBlock(n));
+function ev(b){
+  if(!b) return 0;
+  const f=n=>b.getFieldValue(n);
+  switch(b.type){
+    case 'math_number': return Number(f('NUM'));
+    case 'text': return f('TEXT');
+    case 'sn_is_color': return sense().c===f('COLOR');
+    case 'sn_reflect': return sense().r;
+    case 'sn_reflect_cmp': { const r=sense().r,v=num(b,'VAL'),o=f('OP'); return o==='<'?r<v:o==='>'?r>v:r===v; }
+    case 'mt_pos': return Math.round(R.arm);
+    case 'sn_yaw': return yaw();
+    case 'sn_timer': return Math.round((W.t-W.timer0)*100)/100;
+    case 'op_arith': { const a=num(b,'A'),c=num(b,'B'),o=f('OP'); return o==='+'?a+c:o==='-'?a-c:o==='*'?a*c:(c?a/c:0); }
+    case 'op_cmp': { const a=num(b,'A'),c=num(b,'B'),o=f('OP'); return o==='<'?a<c:o==='>'?a>c:a===c; }
+    case 'op_logic': return f('OP')==='and'?(bool(b,'A')&&bool(b,'B')):(bool(b,'A')||bool(b,'B'));
+    case 'op_not': return !bool(b,'A');
+    case 'op_random': { const a=num(b,'A'),c=num(b,'B'),lo=Math.min(a,c),hi=Math.max(a,c); return Math.floor(lo+Math.random()*(hi-lo+1)); }
+    case 'variables_get': return W.vars[f('VAR')]||0;
+  }
+  return 0;
+}
+function steer(s,sp){ s=clamp(s,-100,100); return s>=0?[sp,sp*(1-s/50)]:[sp*(1+s/50),sp]; }
+function toDeg(amt,unit){ return unit==='degrees'?amt:unit==='rotations'?amt*360:unit==='cm'?amt/R.rotCm*360:amt*2.54/R.rotCm*360; }
+function* driveFor(l,r,amt,unit){
+  if(amt<0){ l=-l;r=-r;amt=-amt; }
+  const my=++driveTok;
+  if(unit==='seconds'){ R.wl=l;R.wr=r; const t0=W.t; while(W.t-t0<amt-1e-9&&driveTok===my) yield; }
+  else{ const deg=toDeg(amt,unit), m=Math.max(Math.abs(l),Math.abs(r)); let p=0;
+    while(m>1e-6&&driveTok===my){ const rem=deg-p; if(rem<=1e-6) break; const k=Math.min(1,rem/(m*DT)); R.wl=l*k;R.wr=r*k; yield; p+=m*k*DT; } }
+  if(driveTok===my){ R.wl=0;R.wr=0; }
+}
+function* armFor(dir,amt,unit){
+  if(amt<0){ dir=-dir;amt=-amt; }
+  const my=++armTok, rate=R.armSpeed/100*ARM_DPS*dir; R.armRate=rate;
+  if(unit==='seconds'){ const t0=W.t; while(W.t-t0<amt-1e-9&&armTok===my) yield; }
+  else{ const deg=unit==='rotations'?amt*360:amt, m=Math.abs(rate); let p=0;
+    while(m>1e-6&&armTok===my){ const rem=deg-p; if(rem<=1e-6) break; const k=Math.min(1,rem/(m*DT)); R.armRate=rate*k; yield; p+=m*k*DT; } }
+  if(armTok===my) R.armRate=0;
+}
+function* armTo(target){
+  const my=++armTok; R.armRate=R.armSpeed/100*ARM_DPS*(target>R.arm?1:-1); const t0=W.t;
+  while(armTok===my&&Math.abs(R.arm-target)>.01&&W.t-t0<3) yield;
+  if(armTok===my) R.armRate=0;
+}
+function beep(){ try{ audio=audio||new (window.AudioContext||window.webkitAudioContext)(); const o=audio.createOscillator(),g=audio.createGain(); o.frequency.value=880; g.gain.value=.06; o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime+.15); }catch(e){} }
+function* stack(b){ while(b){ if(b.isEnabled()){ curBlock=b.id; yield* exec(b); } b=b.getNextBlock(); } }
+function* exec(b){
+  const f=n=>b.getFieldValue(n), body=n=>b.getInputTargetBlock(n), sp=()=>R.moveSpeed/100*MAX_DPS;
+  switch(b.type){
+    case 'mv_move': { const d=f('DIR'),v=sp(); const lr=d==='fwd'?[v,v]:d==='back'?[-v,-v]:d==='left'?[-v,v]:[v,-v]; yield* driveFor(lr[0],lr[1],num(b,'AMOUNT'),f('UNIT')); break; }
+    case 'mv_steer': { const lr=steer(num(b,'STEER'),sp()); yield* driveFor(lr[0],lr[1],num(b,'AMOUNT'),f('UNIT')); break; }
+    case 'mv_start_steer': { const lr=steer(num(b,'STEER'),sp()); driveTok++; R.wl=lr[0];R.wr=lr[1]; break; }
+    case 'mv_stop': driveTok++; R.wl=0;R.wr=0; break;
+    case 'mv_speed': R.moveSpeed=clamp(num(b,'SPEED'),-100,100); break;
+    case 'mv_tank': yield* driveFor(clamp(num(b,'L'),-100,100)/100*MAX_DPS,clamp(num(b,'R'),-100,100)/100*MAX_DPS,num(b,'AMOUNT'),f('UNIT')); break;
+    case 'mv_start_tank': driveTok++; R.wl=clamp(num(b,'L'),-100,100)/100*MAX_DPS; R.wr=clamp(num(b,'R'),-100,100)/100*MAX_DPS; break;
+    case 'mv_motors': break;
+    case 'mt_goto': yield* armTo(clamp(num(b,'POS'),0,90)); break;
+    case 'mv_rotcm': { const v=num(b,'CM'); if(v>0) R.rotCm=v; break; }
+    case 'mt_run_for': yield* armFor(f('DIR')==='cw'?1:-1,num(b,'AMOUNT'),f('UNIT')); break;
+    case 'mt_start': armTok++; R.armRate=R.armSpeed/100*ARM_DPS*(f('DIR')==='cw'?1:-1); break;
+    case 'mt_stop': armTok++; R.armRate=0; break;
+    case 'mt_speed': R.armSpeed=clamp(num(b,'SPEED'),-100,100); break;
+    case 'my_fork_up': yield* armTo(90); break;
+    case 'my_fork_down': yield* armTo(0); break;
+    case 'my_turn': { const want=Math.abs(num(b,'DEG'))*RAD, dir=(f('DIR')==='right'?1:-1)*(num(b,'DEG')<0?-1:1), th0=R.th, t0=W.t, my=++driveTok, v=Math.min(Math.abs(sp()),400);
+      while(driveTok===my&&W.t-t0<8){ const rem=want-Math.abs(R.th-th0); if(rem<=.0015) break; const k=clamp(rem/(25*RAD),.06,1)*v; R.wl=k*dir;R.wr=-k*dir; yield; }
+      if(driveTok===my){ R.wl=0;R.wr=0; } break; }
+    case 'lt_write': W.display=String(ev(b.getInputTargetBlock('TEXT'))).slice(0,24); break;
+    case 'sd_beep': { beep(); const t0=W.t,d=num(b,'SECS'); while(W.t-t0<d) yield; break; }
+    case 'ct_wait': { const t0=W.t,d=num(b,'SECS'); while(W.t-t0<d-1e-9) yield; break; }
+    case 'ct_repeat': { const n=Math.round(num(b,'TIMES')); for(let i=0;i<n;i++){ yield* stack(body('DO')); yield; } break; }
+    case 'ct_forever': while(true){ yield* stack(body('DO')); yield; }
+    case 'ct_if': if(bool(b,'COND')) yield* stack(body('DO')); break;
+    case 'ct_ifelse': if(bool(b,'COND')) yield* stack(body('DO')); else yield* stack(body('ELSE')); break;
+    case 'ct_wait_until': while(!bool(b,'COND')) yield; break;
+    case 'ct_repeat_until': while(!bool(b,'COND')){ yield* stack(body('DO')); yield; } break;
+    case 'ct_stop': throw STOP;
+    case 'sn_reset_yaw': R.th0=R.th; break;
+    case 'sn_reset_timer': W.timer0=W.t; break;
+    case 'variables_set': W.vars[f('VAR')]=ev(b.getInputTargetBlock('VALUE')); break;
+    case 'math_change': W.vars[f('VAR')]=(Number(W.vars[f('VAR')])||0)+num(b,'DELTA'); break;
+  }
+}
+function run(){
+  if(running){ finish('user'); return; }
+  const tops=ws.getTopBlocks(true).filter(b=>b.type==='ev_start'&&b.isEnabled());
+  if(!tops.length){ toast('Add a “when program starts” block from Events first.'); return; }
+  let lost=false;
+  if(L.match&&W.clock>0){ if(W.launched&&!inHome(R.x,R.y)&&W.tokens>0){ W.tokens--; lost=true; } placeRobot(); } else resetWorld();
+  if(L.sloppy&&!$('jig').checked){ R.x+=(Math.random()-.5)*3; R.y+=(Math.random()-.5)*3; R.th+=(Math.random()-.5)*20*RAD; R.th0=R.th; }
+  W.launched=true; hideBanner(); if(lost) toast('Relaunched from outside home: one precision token lost.');
+  if($('wobble').checked){ R.slipL=1+(Math.random()-.5)*.05; R.slipR=1+(Math.random()-.5)*.05; }
+  W.timer0=W.t; W.vars={}; W.display='';
+  threads=tops.map(b=>({gen:stack(b.getNextBlock()),done:false}));
+  running=true; acc=0; setRunBtn();
+  if(window.matchMedia('(max-width:900px)').matches) window.scrollTo({top:0,behavior:'smooth'});
+}
+function tick(){
+  for(const th of threads){ if(th.done) continue;
+    try{ if(th.gen.next().done) th.done=true; }
+    catch(e){ if(e===STOP){ finish('stop'); return; } th.done=true; console.error(e); } }
+  physics(DT); W.t+=DT;
+  if(L.match){ W.clock-=DT; if(W.clock<=0){ W.clock=0; finish('time'); return; } }
+  if(L.live&&L.missions().every(m=>m.done)){ finish('end'); return; }
+  if(threads.every(t=>t.done)) finish('end');
+}
+function score(){ return L.missions().reduce((a,m)=>a+(m.pts||0),0); }
+function finish(why){
+  running=false; R.wl=R.wr=0; R.armRate=0; driveTok++; armTok++; curBlock=null; setRunBtn();
+  if(L.match){
+    const me=P(), sc=score(); if(sc>(me.best||0)){ me.best=sc; save(); pushMe(); }
+    if(why==='time') banner('Time! Final score: '+score()+' of '+maxScore()+'.','Play again',()=>{ resetWorld(); },score()>=200);
+    else toast('Run finished. Score so far: '+score()+'. Press Run to launch again from Home.');
+    return;
+  }
+  if(L.streak&&why!=='user'){ const hit=onPad(W.pads[0]); streaks[L.id]=hit?(streaks[L.id]||0)+1:0; lastMissions='';
+    if(streaks[L.id]<L.streak){ toast(hit?'On the pad! '+streaks[L.id]+' in a row. Run it again.':'Missed the pad, so the streak is back to 0. Try the launch jig.'); return; } }
+  const ms=L.missions();
+  if(ms.every(m=>m.done)){
+    const n=ws.getAllBlocks(false).filter(b=>!b.isShadow()&&b.isEnabled()).length, stars=n<=L.par?3:n<=L.par+2?2:1;
+    const me=P(); me.stars[L.id]=Math.max(me.stars[L.id]||0,stars); save(); renderLevels(); pushMe();
+    burst(R.x,R.y,40);
+    const i=LEVELS.indexOf(L), more=stars<3?' Fewer blocks earns more stars.':'';
+    banner('Solved! '+'★'.repeat(stars)+'☆'.repeat(3-stars)+more,'Next challenge',()=>setLevel(i+1),true);
+  } else if(why!=='user') toast('Not yet: '+ms.find(m=>!m.done).label.toLowerCase()+'. Change your blocks and run again.');
+}
+
+/* ---------------- drawing ---------------- */
+const cv=$('field'), cx=cv.getContext('2d');
+const ZC={red:'#E5484D',green:'#4CAF68',blue:'#3F8FDC',yellow:'#F7CB2D',black:'#151a19',white:'#ffffff',none:'#8b9692'};
+let zoom=false; const cam={x:0,y:0,z:1};
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function disk(c,x,y,r,fill){ c.beginPath(); c.arc(x,y,r,0,7); c.fillStyle=fill; c.fill(); }
+function burst(x,y,n){ if(window.matchMedia('(prefers-reduced-motion:reduce)').matches) return; const cols=['#FFD21F','#19C3B1','#E0399F','#58BBEE'];
+  for(let i=0;i<n;i++){ const a=Math.random()*7,v=10+Math.random()*30; W.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1,c:cols[i%4]}); } }
+function label(c,t,x,y,size,col){ c.font='600 '+size+'px Fredoka, sans-serif'; c.textAlign='center'; c.textBaseline='middle'; c.fillStyle=col; c.fillText(t,x,y); }
+let artCv=null;
+function matArt(){
+  if(artCv) return artCv;
+  const S=8, m=W.mat; artCv=document.createElement('canvas'); artCv.width=L.w*S; artCv.height=L.h*S;
+  const g=artCv.getContext('2d'); g.scale(S,S);
+  g.fillStyle='#131516'; g.fillRect(0,0,L.w,L.h);
+  g.save(); g.beginPath(); g.rect(m.x,0,m.w,L.h); g.clip();
+  g.fillStyle='#2E6B3C'; g.fillRect(m.x,0,m.w,L.h);
+  let seed=20262027; const rnd=()=>{ seed=(seed*1664525+1013904223)>>>0; return seed/4294967296; };
+  const blob=(x,y,r)=>{ g.beginPath(); for(let j=0;j<5;j++){ const a=j/5*6.283+rnd(), px=x+Math.cos(a)*r*.5, py=y+Math.sin(a)*r*.5; g.moveTo(px+r*.55,py); g.arc(px,py,r*.55,0,7); } g.fill(); };
+  g.fillStyle='#D98A3D'; g.globalAlpha=.75;
+  [[52,30],[57,42],[50,54],[62,62],[70,80],[84,98],[150,22],[203,62],[206,10],[40,22],[96,30]].forEach(p=>{ for(let i=0;i<4;i++) blob(p[0]+rnd()*8-4,p[1]+rnd()*8-4,3+rnd()*3); });
+  const greens=['#24592F','#35803F','#4B9A4A','#6FB35A','#8CC56B','#1E4B2A'];
+  for(let i=0;i<950;i++){ g.globalAlpha=.5+rnd()*.4; g.fillStyle=greens[(rnd()*greens.length)|0]; blob(m.x+rnd()*m.w,rnd()*L.h,1.5+rnd()*4.5); }
+  g.globalAlpha=1;
+  for(const z of W.paints){ g.fillStyle=z.paint; rr(g,z.x,z.y,z.w,z.h,2.5); g.fill(); g.strokeStyle='rgba(0,0,0,.14)'; g.lineWidth=.4; g.beginPath();
+    for(let y=z.y+4;y<z.y+z.h-1;y+=4){ g.moveTo(z.x+2,y); g.lineTo(z.x+z.w-2,y); } g.stroke(); }
+  g.lineCap='round'; g.lineJoin='round';
+  for(const pass of [['#3A8FD0',1],['#9BD6F5',.35]]) for(const r of W.rivers){ g.strokeStyle=pass[0]; g.lineWidth=r.w*pass[1]; g.beginPath(); r.pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])); g.stroke(); }
+  g.restore();
+  g.fillStyle='#C7362F'; g.fillRect(m.x-.5,0,.9,L.h); g.fillStyle='#2A6FC9'; g.fillRect(m.x+m.w-.4,0,.9,L.h);
+  return artCv;
+}
+function draw(now){
+  const dpr=Math.min(window.devicePixelRatio||1,2.5), cw=cv.clientWidth; if(!cw) return;
+  const pw=Math.round(cw*dpr), ph=Math.round(cw*L.h/L.w*dpr);
+  if(cv.width!==pw||cv.height!==ph){ cv.width=pw; cv.height=ph; }
+  const k=pw/L.w, c=cx, pulse=.5+.5*Math.sin(now/350), M=!!W.mat;
+  cam.z=zoom?2.2:1; cam.x=zoom?clamp(R.x-L.w/cam.z/2,0,L.w-L.w/cam.z):0; cam.y=zoom?clamp(R.y-L.h/cam.z/2,0,L.h-L.h/cam.z):0;
+  const K=k*cam.z; c.setTransform(K,0,0,K,-cam.x*K,-cam.y*K);
+  if(M) c.drawImage(matArt(),0,0,L.w,L.h); else { c.fillStyle='#F3F7EC'; c.fillRect(0,0,L.w,L.h); }
+  c.strokeStyle=M?'rgba(255,255,255,.1)':'rgba(18,48,43,.08)'; c.lineWidth=.25; c.beginPath();
+  for(let x=10;x<L.w;x+=10){ c.moveTo(x,0); c.lineTo(x,L.h); } for(let y=10;y<L.h;y+=10){ c.moveTo(0,y); c.lineTo(L.w,y); } c.stroke();
+  if(W.homes) for(const h of W.homes){
+    c.fillStyle='#F6F5F0'; c.beginPath(); c.moveTo(h.cx,h.cy); c.arc(h.cx,h.cy,h.r-.7,h.a0,h.a1); c.closePath(); c.fill();
+    c.strokeStyle=h.col; c.lineWidth=1.4; c.beginPath(); c.arc(h.cx,h.cy,h.r-.7,h.a0,h.a1); c.stroke();
+    c.strokeStyle='rgba(30,30,30,.5)'; c.lineWidth=.3; c.beginPath(); for(let a=h.a0+.14;a<h.a1;a+=.19){ const ca=Math.cos(a),sa=Math.sin(a); c.moveTo(h.cx+ca*(h.r-5.5),h.cy+sa*(h.r-5.5)); c.lineTo(h.cx+ca*(h.r-1.6),h.cy+sa*(h.r-1.6)); } c.stroke();
+    label(c,'LAUNCH',h.cx+(h.a0<0?14:-14),h.cy-4,3.4,h.col);
+  }
+  for(const z of W.zones){
+    if(z.outline){ c.setLineDash([1.4,1.2]); c.strokeStyle='rgba(255,255,255,.9)'; c.lineWidth=.5; c.fillStyle='rgba(255,255,255,.14)'; if(z.r){ c.beginPath(); c.arc(z.x,z.y,z.r,0,7); } else rr(c,z.x,z.y,z.w,z.h,1.5); c.fill(); c.stroke(); c.setLineDash([]);
+      if(z.label) label(c,z.label,z.r?z.x:z.x+z.w/2,z.r?z.y+z.r+2.2:z.y+z.h+2.2,2.5,'rgba(255,255,255,.95)'); continue; }
+    c.globalAlpha=.92; c.fillStyle=z.paint||ZC[z.color]; if(z.r){ c.beginPath(); c.arc(z.x,z.y,z.r,0,7); } else rr(c,z.x,z.y,z.w,z.h,Math.min(4,z.h/3)); c.fill(); c.globalAlpha=1;
+    if(z.label) label(c,z.label,z.r?z.x:z.x+z.w/2,z.r?z.y+z.r-3.5:z.y+z.h-4,3.4,z.ink||'rgba(255,255,255,.95)'); }
+  c.lineCap='round'; c.lineJoin='round';
+  for(const pass of [1,0]) for(const ln of W.lines){ if(pass&&!ln.halo) continue; c.strokeStyle=pass?'#FFFFFF':'#151a19'; c.lineWidth=ln.w+(pass?2.2:0); c.beginPath(); ln.pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])); c.stroke(); }
+  for(const p of W.pads){ const on=onPad(p); c.fillStyle=on?'rgba(25,195,177,.55)':'rgba(25,195,177,.16)'; c.beginPath(); c.arc(p.x,p.y,p.r,0,7); c.fill();
+    c.strokeStyle='#0FA595'; c.lineWidth=.8; c.stroke(); c.globalAlpha=.25+.5*pulse; c.lineWidth=.5; c.beginPath(); c.arc(p.x,p.y,p.r*(.45+.2*pulse),0,7); c.stroke(); c.globalAlpha=1; }
+  W.gates.forEach((g,i)=>{ c.setLineDash(g.hit?[]:[2,1.6]); c.strokeStyle=g.hit?'#178A4C':'#C92A78'; c.lineWidth=g.hit?1.2:.8; c.beginPath(); c.arc(g.x,g.y,g.r,0,7); c.stroke(); c.setLineDash([]);
+    if(g.hit){ c.fillStyle='rgba(23,138,76,.18)'; c.fill(); } label(c,g.hit?'✓':String(i+1),g.x,g.y,5,g.hit?'#178A4C':'#C92A78'); });
+  for(const o of W.objs) if(o.rail){ const a=o.rail, l=Math.hypot(a.x1-a.x0,a.y1-a.y0), ux=(a.x1-a.x0)/l, uy=(a.y1-a.y0)/l, ex=a.x1+ux*(o.r+.7), ey=a.y1+uy*(o.r+.7), full=railT(o)>=.97;
+    c.strokeStyle='rgba(255,255,255,.85)'; c.lineWidth=.7; c.setLineDash([1.2,1.2]); c.beginPath(); c.moveTo(a.x0,a.y0); c.lineTo(a.x1,a.y1); c.stroke(); c.setLineDash([]);
+    c.strokeStyle=full?'#19C3B1':'#FFFFFF'; c.lineWidth=1.1; c.beginPath(); c.moveTo(ex-uy*3.4,ey+ux*3.4); c.lineTo(ex+uy*3.4,ey-ux*3.4); c.stroke(); }
+  for(const f of W.fix) drawFix(c,f);
+  for(const r of W.rocks){ disk(c,r.x+.5,r.y+.7,r.r,'rgba(0,0,0,.15)'); disk(c,r.x,r.y,r.r,r.col||'#7F8B86'); disk(c,r.x-r.r*.25,r.y-r.r*.3,r.r*.5,'rgba(255,255,255,.22)'); }
+  if(L.paint) L.paint(c);
+  if(W.trail.length>1){ c.strokeStyle=M?'rgba(255,255,255,.75)':'rgba(18,121,181,.45)'; c.lineWidth=.6; c.setLineDash([1.2,1.4]); c.beginPath(); W.trail.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])); c.stroke(); c.setLineDash([]); }
+  for(const o of W.objs) if(!o.car) drawObj(c,o,1);
+  for(const t of W.tags){ disk(c,t.x,t.y,2.9,'#12302B'); label(c,t.t,t.x,t.y+.2,t.t.length>1?3:3.6,'#FFD21F'); }
+  drawRobot(c);
+  if(W.bumpFlash>0){ c.strokeStyle='rgba(199,54,47,'+(W.bumpFlash*2)+')'; c.lineWidth=1; c.beginPath(); c.arc(R.x,R.y,15,0,7); c.stroke(); label(c,'bump!',R.x,R.y-17,4.5,'rgba(255,90,80,'+Math.min(1,W.bumpFlash*3)+')'); }
+  for(const p of W.parts){ c.globalAlpha=Math.max(0,p.life); c.fillStyle=p.c; c.fillRect(p.x-.7,p.y-.7,1.4,1.4); } c.globalAlpha=1;
+}
+function drawFix(c,f){
+  const done=f.kind==='flip'?f.stage===2:f.done, half=f.kind==='flip'&&f.stage===1;
+  f.anim+=((done?1:half?.5:0)-f.anim)*.12;
+  if(f.br){
+    if(f.art==='tree'){ c.fillStyle='rgba(60,140,70,.35)'; c.beginPath(); c.arc(f.bx,f.by,f.br+5,0,7); c.fill(); disk(c,f.bx,f.by,f.br,'#7A5A30'); disk(c,f.bx,f.by,f.br*.55,'#5E4423'); }
+    else if(f.art==='box'){ c.fillStyle='#CDB58A'; rr(c,f.bx-f.br,f.by-f.br,f.br*2,f.br*2,1.4); c.fill(); c.fillStyle='#8DB06A'; rr(c,f.bx-f.br+1.4,f.by-f.br+1.4,f.br*2-2.8,f.br*2-2.8,1); c.fill(); }
+    else if(f.art==='rock'){ disk(c,f.bx,f.by,f.br,'#77837E'); disk(c,f.bx-1.5,f.by-1.5,f.br*.45,'#96A19C'); }
+    else { disk(c,f.bx,f.by,f.br,'#8E9896'); disk(c,f.bx,f.by,f.br*.55,'#5F6B68'); }
+    c.strokeStyle='rgba(255,255,255,.55)'; c.lineWidth=.6; c.beginPath(); c.moveTo(f.bx,f.by); c.lineTo(f.x,f.y); c.stroke();
+  }
+  c.save(); if(f.anim>.02){ c.shadowColor='#19C3B1'; c.shadowBlur=14*f.anim; }
+  disk(c,f.x,f.y,3.3,done?'#19C3B1':half?'#F29A00':'rgba(14,36,32,.88)'); c.restore();
+  c.strokeStyle='#FFFFFF'; c.lineWidth=.45; c.beginPath(); c.arc(f.x,f.y,3.3,0,7); c.stroke();
+  label(c,done?'✓':(f.kind==='press'||half)?'▼':'▲',f.x,f.y+.25,3.4,done||half?'#06302B':'#FFD21F');
+}
+function drawObj(c,o,sc){
+  c.save(); c.translate(o.x,o.y); c.scale(sc,sc); const r=o.r;
+  const loop=(x,y)=>{ c.strokeStyle='#E8C48A'; c.lineWidth=.55; c.beginPath(); c.arc(x,y,1.1,0,7); c.stroke(); };
+  if(o.type==='seed'){ disk(c,.3,.4,r,'rgba(0,0,0,.2)'); disk(c,0,0,r,'#6B3F1D'); disk(c,-.5,-.5,r*.4,'#9A6A3A'); loop(r*.8,r*.8); }
+  else if(o.type==='knob'){ disk(c,.3,.4,r,'rgba(0,0,0,.25)'); disk(c,0,0,r,o.col); disk(c,0,0,r*.45,'rgba(255,255,255,.6)'); }
+  else if(o.type==='leaf'){ c.fillStyle='#1F8A3C'; c.beginPath(); c.ellipse(0,.6,r*.8,r*1.5,0,0,7); c.fill(); c.strokeStyle='#BFE8A8'; c.lineWidth=.3; c.beginPath(); c.moveTo(0,-.8); c.lineTo(0,2.6); c.stroke(); loop(0,-r*.9); }
+  else if(o.type==='katy'){ c.fillStyle='#8BE04F'; c.beginPath(); c.ellipse(0,.6,r*.8,r*1.5,0,0,7); c.fill(); disk(c,-.7,-.4,.4,'#12302B'); disk(c,.7,-.4,.4,'#12302B'); loop(0,-r*.9); }
+  else if(o.type==='ring'){ c.strokeStyle='#E0342B'; c.lineWidth=1.1; c.beginPath(); c.arc(0,0,r,0,7); c.stroke(); }
+  else if(o.type==='fragile'){ const ok=moved(o)<.6; c.fillStyle='#F4F4EE'; rr(c,-r,-r,r*2,r*2,.9); c.fill(); c.strokeStyle=ok?'#6B7A75':'#E0342B'; c.lineWidth=ok?.4:.9; c.stroke(); disk(c,0,0,1.2,o.icon); }
+  else { disk(c,.4,.5,r+1.2,'rgba(0,0,0,.18)'); c.strokeStyle='#12302B'; c.lineWidth=1.3; c.beginPath(); c.arc(0,0,r+.6,0,7); c.stroke(); disk(c,0,0,r,'#1D5148'); c.save(); c.shadowColor='#FFD21F'; c.shadowBlur=8; disk(c,0,0,1.5,'#FFE66B'); c.restore(); }
+  c.restore();
+}
+function drawRobot(c){
+  const up=Math.sin(R.arm*RAD), len=FORK_LEN*Math.cos(R.arm*RAD), seen=sense();
+  c.save(); c.translate(R.x,R.y); c.rotate(R.th);
+  c.fillStyle='rgba(0,0,0,.22)'; rr(c,-9,-7.2,19.4,16,2.4); c.fill();
+  for(const y of [-10.4,7.2]){ c.fillStyle='#161d1c'; rr(c,-4.6,y,9.2,3.2,1.3); c.fill(); c.fillStyle='#35B3E6'; rr(c,-2.6,y+.9,5.2,1.4,.6); c.fill(); }
+  c.fillStyle='#35B3E6'; rr(c,-9.5,-8,19,16,2.2); c.fill();
+  c.fillStyle='#F2F3F1'; rr(c,-8.6,-7.1,17.2,14.2,1.7); c.fill();
+  c.fillStyle='#FFD21F'; rr(c,-6,-5.2,10.5,10.4,1.4); c.fill();
+  c.fillStyle='#FBFBF8'; rr(c,-5,-4.2,8.5,8.4,1.1); c.fill();
+  c.fillStyle='#DDE2E0'; rr(c,-2.4,-2.4,4.8,4.8,.7); c.fill();
+  c.fillStyle='#12302B'; c.beginPath(); c.moveTo(1.8,0); c.lineTo(-1.1,-1.6); c.lineTo(-1.1,1.6); c.closePath(); c.fill();
+  disk(c,-7.6,0,1.9,'#C9CFCC'); disk(c,-7.6,0,.9,'#7d8884');
+  c.fillStyle='#161d1c'; rr(c,6.6,4.6,3.2,3.2,.6); c.fill(); disk(c,SENSOR.x,SENSOR.y,.95,ZC[seen.c]);
+  const col=up>.5?'#F26AAE':'#D12C80', pl=Math.max(1.6,len), y0=-FORK_HALF, pw=1.5;
+  if(up>.3){ c.fillStyle='rgba(0,0,0,'+(.16*up)+')'; rr(c,7.4+up,y0+up,pl+2.4,FORK_HALF*2,.6); c.fill(); }
+  c.fillStyle=col; rr(c,7,y0,pl+2.5,pw,.6); c.fill(); rr(c,7,FORK_HALF-pw,pl+2.5,pw,.6); c.fill();
+  rr(c,9.5+pl*.28,y0,1.6,FORK_HALF*2,.5); c.fill();
+  c.fillStyle='#22302d'; rr(c,6.2,-1.6,2.4,3.2,.6); c.fill();
+  if(up>.5){ disk(c,9.5+pl,y0+pw/2,1,'#FFD9EC'); disk(c,9.5+pl,FORK_HALF-pw/2,1,'#FFD9EC'); }
+  c.restore();
+  for(const o of W.objs) if(o.car) drawObj(c,o,1+.2*up);
+}
+
+/* ---------------- UI ---------------- */
+let toastTimer=0, bannerAct=null, lastMissions='';
+function banner(msg,btn,act,win){ clearTimeout(toastTimer); $('bannerMsg').textContent=msg; $('bannerBtn').textContent=btn||''; $('bannerBtn').hidden=!btn; bannerAct=act; $('banner').className=win?'win':''; $('banner').hidden=false; }
+function toast(msg){ banner(msg,'',null,false); toastTimer=setTimeout(hideBanner,5200); }
+function hideBanner(){ clearTimeout(toastTimer); $('banner').hidden=true; }
+$('bannerBtn').onclick=()=>{ hideBanner(); if(bannerAct) bannerAct(); };
+function setRunBtn(){ const b=$('run'); b.textContent=running?'■ Stop':'▶ Run'; b.classList.toggle('on',running); }
+function renderLevels(){
+  const nav=$('levels'); nav.textContent='';
+  LEVELS.forEach((lv,i)=>{ const b=document.createElement('button'); b.type='button'; b.className='lv'; b.setAttribute('aria-current',String(lv===L));
+    const s=P().stars[lv.id]||0, st=document.createElement('span'); st.className='st'+(s?' won':''); st.textContent=lv.match?'2:30':('★'.repeat(s)+'☆'.repeat(3-s));
+    b.append((i+1)+' '+lv.name,st); b.onclick=()=>setLevel(i); nav.append(b); });
+}
+function renderMissions(){
+  const ms=L.missions(), key=JSON.stringify(ms); if(key===lastMissions) return; lastMissions=key;
+  const ul=$('missions'); ul.textContent='';
+  for(const m of ms){ const done=m.max?m.pts>=m.max:m.done, li=document.createElement('li'); if(done) li.className='done';
+    const box=document.createElement('span'); box.className='box'; box.textContent=done?'✓':''; const t=document.createElement('span'); t.className='mt'; t.textContent=m.label; if(m.how){ const h=document.createElement('small'); h.textContent=m.how; t.append(h); } li.append(box,t);
+    if(m.max){ const p=document.createElement('span'); p.className='pts'; p.textContent=m.pts+' / '+m.max; li.append(p); } ul.append(li); }
+  if(L.match) $('hScore').textContent=score();
+}
+function hud(){
+  const s=sense(); $('hYaw').textContent=yaw()+'°'; $('hSw').style.background=ZC[s.c]; $('hCol').textContent=s.c==='none'?'no color':s.c; $('hRef').textContent=s.r+'%';
+  $('hArm').textContent=R.arm>=89?'up':R.arm<=1?'down':Math.round(R.arm)+'°'; $('hTime').textContent=(W.t-W.timer0).toFixed(1);
+  $('cDisp').hidden=!W.display; $('hDisp').textContent=W.display;
+  if(L.match){ const t=Math.ceil(W.clock); $('hClock').textContent=Math.floor(t/60)+':'+String(t%60).padStart(2,'0'); }
+}
+function loadProgram(json){ loading=true; try{ Blockly.serialization.workspaces.load(json,ws); }catch(e){ console.error(e); ws.clear(); Blockly.serialization.workspaces.load(program([]),ws); } loading=false; ws.scroll(0,0); }
+let loading=false;
+function setLevel(i){
+  if(running) finish('user');
+  i=clamp(i,0,LEVELS.length-1); L=LEVELS[i]; store.level=i; save();
+  cv.style.aspectRatio=L.w+' / '+L.h; cv.classList.toggle('drag',!!L.drag);
+  $('lname').textContent=(i+1)+'. '+L.name; $('lgoal').textContent=L.goal; $('lhint').textContent=L.hint; $('hintbox').open=false;
+  $('cScore').hidden=$('cClock').hidden=$('docks').hidden=!L.match; docksLabel();
+  resetWorld(); lastMissions=''; renderLevels(); streaks={}; renderLib(); $('jigL').hidden=!L.sloppy;
+  if(ws) loadProgram(store.progs[progKey()]||store.progs[L.id]||program(L.starter()));
+}
+$('run').onclick=run;
+$('reset').onclick=()=>{ if(running) finish('user'); resetWorld(); };
+$('speed').onclick=()=>{ speed=speed===1?2:speed===2?4:1; $('speed').textContent='Speed '+speed+'×'; };
+$('restart').onclick=()=>ask('Throw away your blocks for this challenge and start over?',null,ok=>{ if(ok){ delete store.progs[progKey()]; delete store.progs[L.id]; save(); loadProgram(program(L.starter())); } });
+
+/* in-page dialogs (browser prompt/confirm are not available everywhere) */
+let modalCb=null;
+function ask(msg,def,cb){ $('modalMsg').textContent=msg; const inp=$('modalIn'); inp.hidden=def===null; inp.value=def||''; modalCb=cb; $('modal').hidden=false; (def===null?$('modalOk'):inp).focus(); }
+function closeModal(v){ $('modal').hidden=true; const cb=modalCb; modalCb=null; if(cb) cb(v); }
+$('modalForm').onsubmit=e=>{ e.preventDefault(); closeModal($('modalIn').hidden?true:$('modalIn').value); };
+$('modalNo').onclick=()=>closeModal($('modalIn').hidden?false:null);
+Blockly.dialog.setPrompt((m,d,cb)=>ask(m,d||'',cb));
+Blockly.dialog.setConfirm((m,cb)=>ask(m,null,cb));
+Blockly.dialog.setAlert((m,cb)=>ask(m,null,()=>cb&&cb()));
+
+/* drag the robot inside Home on Match Day */
+let dragging=null;
+const ptr=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*L.w/cam.z+cam.x,(e.clientY-r.top)/r.height*L.h/cam.z+cam.y]; };
+cv.addEventListener('pointerdown',e=>{ if(!L.drag||running||!W.homes) return; const p=ptr(e); if(Math.hypot(p[0]-R.x,p[1]-R.y)>14) return;
+  if(!homeOK(R.x,R.y)) placeRobot(); dragging={sx:p[0],sy:p[1],ox:R.x,oy:R.y,moved:0}; cv.setPointerCapture(e.pointerId); e.preventDefault(); });
+cv.addEventListener('pointermove',e=>{ if(!dragging) return; const p=ptr(e); dragging.moved=Math.max(dragging.moved,Math.hypot(p[0]-dragging.sx,p[1]-dragging.sy));
+  if(dragging.moved>1.5){ const tx=dragging.ox+p[0]-dragging.sx, ty=dragging.oy+p[1]-dragging.sy, h=tx<L.w/2?W.homes[0]:W.homes[1]; let dx=tx-h.cx, dy=ty-h.cy; const d=Math.hypot(dx,dy)||1, m=h.r-11.5; if(d>m){ dx*=m/d; dy*=m/d; }
+    R.x=clamp(h.cx+dx,13,L.w-13); R.y=clamp(h.cy+dy,13,L.h-13); } });
+const endDrag=()=>{ if(!dragging) return; if(dragging.moved<=1.5){ R.th+=45*RAD; } else if(!homeOK(R.x,R.y)){ R.x=dragging.ox; R.y=dragging.oy; }
+  const d=Math.round(R.th/RAD/45)*45%360; store.place={x:Math.round(R.x*10)/10,y:Math.round(R.y*10)/10,d}; save(); dragging=null; placeRobot(); };
+cv.addEventListener('pointerup',endDrag); cv.addEventListener('pointercancel',endDrag);
+function docksLabel(){ const o=ORDERS[store.docks||0]; $('docks').textContent='Docks: mine '+o[0]+' · city '+o[1]+' · farm '+o[2]; }
+$('docks').onclick=()=>{ if(running) finish('user'); store.docks=((store.docks||0)+1)%6; save(); docksLabel(); resetWorld(); lastMissions=''; };
+$('zoom').onclick=()=>{ zoom=!zoom; $('zoom').textContent=zoom?'Zoom out':'Zoom in'; };
+
+/* ---------------- block workspace ---------------- */
+const isDark=()=>{ const t=document.documentElement.getAttribute('data-theme'); return t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches; };
+const st=c=>({colourPrimary:c});
+function theme(dark){
+  return Blockly.Theme.defineTheme(dark?'glowDark':'glowLight',{base:Blockly.Themes.Zelos,startHats:false,
+    blockStyles:{ev:{colourPrimary:'#C99700',hat:'cap'},mv:st('#E0399F'),mt:st('#0A84E0'),hub:st('#8E5CF0'),ct:st('#F29A00'),sn:st('#17A9D1'),op:st('#12A150'),my:st('#F0525A'),
+      variable_blocks:st('#F0802B'),math_blocks:st('#12A150'),text_blocks:st('#8E5CF0')},
+    componentStyles:dark?{workspaceBackgroundColour:'#0F1E1B',toolboxBackgroundColour:'#132522',toolboxForegroundColour:'#E7F3EE',flyoutBackgroundColour:'#1B332E',flyoutForegroundColour:'#E7F3EE',flyoutOpacity:.97,scrollbarColour:'#3B5A52',insertionMarkerColour:'#fff',insertionMarkerOpacity:.3}
+      :{workspaceBackgroundColour:'#F7FAF8',toolboxBackgroundColour:'#FFFFFF',toolboxForegroundColour:'#12302B',flyoutBackgroundColour:'#E2ECE7',flyoutForegroundColour:'#12302B',flyoutOpacity:.97,scrollbarColour:'#A9BDB5',insertionMarkerColour:'#000',insertionMarkerOpacity:.25},
+    fontStyle:{family:'Nunito, "Segoe UI", sans-serif',weight:'700',size:11}});
+}
+const small=window.matchMedia('(max-width:900px)').matches;
+ws=Blockly.inject('blockly',{toolbox:TOOLBOX,renderer:'zelos',theme:theme(isDark()),trashcan:false,sounds:false,
+  zoom:{controls:false,wheel:true,pinch:true,startScale:small?.62:.78,maxScale:1.6,minScale:.35,scaleSpeed:1.1},
+  move:{scrollbars:true,drag:true,wheel:true},grid:{spacing:28,length:2,colour:isDark()?'#27433C':'#D5E1DB',snap:false}});
+ws.addChangeListener(e=>{ if(e.isUiEvent||loading) return; store.progs[progKey()]=Blockly.serialization.workspaces.save(ws); save(); });
+const reTheme=()=>ws.setTheme(theme(isDark()));
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',reTheme);
+new MutationObserver(reTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+if(window.ResizeObserver) new ResizeObserver(()=>Blockly.svgResize(ws)).observe($('blockly'));
+window.addEventListener('resize',()=>Blockly.svgResize(ws));
+
+/* ---------------- team scoreboard and shared programs ----------------
+   Two ways to share scores. On the GitHub copy, config.js sets GLOWBOT_SHEET_URL to a
+   Google Apps Script web app that stores everything in a Google Sheet. On claude.ai the
+   page uses the artifact's own database instead. With neither, scores stay on the device. */
+const SHEET_URL=String(window.GLOWBOT_SHEET_URL||'').trim();
+let back=null, canWrite=true, team={}, teamState='local', writeChain=Promise.resolve(), streaks={}, dirty=false, libSeq=0;
+function P(){ const k=store.me||'guest'; return store.players[k]||(store.players[k]={name:k==='guest'?'Guest':k,stars:k==='guest'?(store.stars||{}):{},best:0}); }
+function progKey(){ return (store.me&&store.me!=='guest'?store.me+'/':'')+L.id; }
+function allInHome(){ const h=W.homes[0]; return [[BODY.x0,BODY.y0],[BODY.x0,BODY.y1],[BODY.x1,BODY.y0],[BODY.x1,BODY.y1]].every(p=>{ const q=toWorld(p[0],p[1]); return Math.hypot(q[0]-h.cx,q[1]-h.cy)<=h.r; }); }
+const slug=n=>String(n).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,24);
+const starSum=p=>Object.values(p.stars||{}).reduce((a,b)=>a+(Number(b)||0),0);
+function merged(a,b){ const stars=Object.assign({},a&&a.stars); if(b&&b.stars) for(const id in b.stars) stars[id]=Math.max(Number(stars[id])||0,Number(b.stars[id])||0);
+  return {name:(b&&b.name)||(a&&a.name)||'',stars,best:Math.max((a&&Number(a.best))||0,(b&&Number(b.best))||0)}; }
+const sameScore=(a,b)=>!!a&&!!b&&a.name===b.name&&a.best===b.best&&JSON.stringify(a.stars)===JSON.stringify(b.stars);
+
+function claudeBackend(db){
+  let progs=[];
+  return {kind:'claude',maxJson:200000,
+    start(onPlayers,onFail){
+      db.collection('players').onSnapshot(s=>{ const t={}; s.docs.forEach(d=>{ t[d.id]=d.data()||{}; }); onPlayers(t); },onFail);
+      db.collection('programs').onSnapshot(s=>{ progs=s.docs.map(d=>d.data()); renderLib(); },()=>{});
+    },
+    savePlayer:(k,b)=>db.doc('players/'+k).set(b),
+    saveProgram:(id,b)=>db.doc('programs/'+id).set(b),
+    programs:lv=>Promise.resolve(progs.filter(p=>p&&p.level===lv))};
+}
+function sheetBackend(url){
+  const check=r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); };
+  const ok=j=>{ if(!j||j.ok!==true) throw new Error((j&&j.error)||'The scoreboard sent back something unexpected.'); return j; };
+  const get=q=>fetch(url+(url.indexOf('?')<0?'?':'&')+q,{redirect:'follow'}).then(check).then(ok);
+  const post=b=>fetch(url,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(b)}).then(check).then(ok);
+  const cache={};
+  return {kind:'sheet',maxJson:45000,
+    start(onPlayers,onFail,onOffline){
+      let first=true;
+      const poll=()=>{ if(document.hidden) return; get('what=players').then(j=>{ first=false; onPlayers(j.players||{}); renderLib(); },e=>{ if(first) onFail(e); else onOffline(e); }); };
+      poll(); setInterval(poll,30000);
+      document.addEventListener('visibilitychange',()=>{ if(!document.hidden) poll(); });
+    },
+    savePlayer:(k,b)=>post({type:'player',key:k,name:b.name,stars:b.stars,best:b.best}),
+    saveProgram:(id,b)=>post(Object.assign({type:'program'},b)).then(j=>{ delete cache[b.level]; return j; }),
+    programs:lv=>{ const c=cache[lv]; if(c&&Date.now()-c.t<25000) return c.p;
+      const p=get('what=programs&level='+encodeURIComponent(lv)).then(j=>j.programs||[]); cache[lv]={t:Date.now(),p}; p.catch(()=>{ delete cache[lv]; }); return p; }};
+}
+
+function teamNote(){
+  const sheet=back&&back.kind==='sheet';
+  $('teamNote').textContent=
+    teamState==='shared'?(!canWrite?'Shared board. This account can look but not add scores.':sheet?'Team board: scores are saved to the team Google Sheet, so every device sees the same board.':'Shared board: everyone signed in to this page sees the same scores.')
+    :teamState==='wait'?'Connecting to the team board…'
+    :teamState==='offline'?'The team board cannot be reached right now. Your scores are kept on this device and sent when it reconnects.'
+    :'Scores are saved on this device only.';
+  $('shareProg').hidden=!(back&&canWrite);
+}
+function pushMe(){
+  renderBoard(); const k=store.me; if(!back||!canWrite||!k||k==='guest') return;
+  const m=merged(team[k],P()); if(sameScore(team[k]&&merged(team[k],null),m)&&!dirty) return;
+  const body={name:m.name,stars:m.stars,best:m.best,t:Date.now()};
+  writeChain=writeChain.then(()=>back.savePlayer(k,body)).then(()=>{
+    dirty=false; team[k]=merged(team[k],body); if(teamState==='offline'){ teamState='shared'; teamNote(); }
+  },e=>{
+    if(e&&e.code==='invalid_argument'){ canWrite=false; teamNote(); return; }
+    dirty=true; if(back&&back.kind==='sheet'&&teamState==='shared'){ teamState='offline'; teamNote(); }
+  });
+}
+function renderBoard(){
+  const rows={}; for(const k in team) rows[k]=merged(team[k],null);
+  for(const k in store.players) if(k!=='guest') rows[k]=merged(rows[k],store.players[k]);
+  const lessons=LEVELS.filter(l=>!l.match).length;
+  const list=Object.keys(rows).map(k=>({k,name:String(rows[k].name||k).slice(0,24),stars:starSum(rows[k]),solved:Object.keys(rows[k].stars).filter(i=>rows[k].stars[i]>0).length,best:rows[k].best}))
+    .sort((a,b)=>b.stars-a.stars||b.best-a.best||a.name.localeCompare(b.name));
+  const tb=$('boardBody'); tb.textContent='';
+  if(!list.length){ const tr=document.createElement('tr'), td=document.createElement('td'); td.colSpan=5; td.className='empty'; td.textContent='No coders yet. Tap “Add coder” to put your name on the board.'; tr.append(td); tb.append(tr); }
+  list.forEach((r,i)=>{ const tr=document.createElement('tr'); if(r.k===store.me) tr.className='me';
+    [i+1,r.name,'★ '+r.stars+' / '+lessons*3,r.solved+' / '+lessons,r.best||'–'].forEach(v=>{ const td=document.createElement('td'); td.textContent=v; tr.append(td); }); tb.append(tr); });
+  const sel=$('me'); sel.textContent='';
+  [{k:'guest',name:'Guest (not on the board)'}].concat(list).forEach(r=>{ const o=document.createElement('option'); o.value=r.k; o.textContent=r.name; sel.append(o); });
+  sel.value=store.me&&rows[store.me]?store.me:'guest';
+}
+function useCoder(k,name){
+  if(k!=='guest'&&!store.players[k]){ const m=merged(team[k],null); m.name=name||m.name||k; store.players[k]=m; }
+  store.me=k; save(); setLevel(store.level||0); pushMe();
+}
+$('me').onchange=()=>useCoder($('me').value);
+$('addMe').onclick=()=>ask('First name or nickname for the board:','',v=>{ const name=String(v||'').trim().slice(0,24), k=slug(name); if(!k||k==='guest') return; useCoder(k,name); });
+function adopt(json){ loadProgram(json); store.progs[progKey()]=Blockly.serialization.workspaces.save(ws); save(); }
+function renderLib(){
+  if(!L) return;
+  const seq=++libSeq, lv=L.id;
+  const draw=items=>{
+    if(seq!==libSeq||lv!==L.id) return;
+    const ul=$('lib'); ul.textContent='';
+    const list=(items||[]).filter(p=>p&&p.level===lv).sort((a,b)=>(Number(b.t)||0)-(Number(a.t)||0));
+    if(!list.length){ const li=document.createElement('li'); li.className='empty';
+      li.textContent=!back?'Shared programs appear here when the team board is connected.':items===null?'Team programs cannot be loaded right now.':'Nobody has shared a program for this challenge yet.'; ul.append(li); return; }
+    for(const p of list){ const li=document.createElement('li'), s=document.createElement('span'), b=document.createElement('button'), who=String(p.player||'Someone').slice(0,24);
+      s.textContent=who+' · '+(Number(p.blocks)||0)+' blocks'; b.type='button'; b.className='btn sm'; b.textContent='Load';
+      b.onclick=()=>ask('Replace your blocks with the program from '+who+'?',null,ok=>{ if(!ok) return; try{ adopt(JSON.parse(p.json)); }catch(e){ toast('That program could not be loaded.'); } });
+      li.append(s,b); ul.append(li); }
+  };
+  if(!back){ draw([]); return; }
+  Promise.resolve(back.programs(lv)).then(draw,()=>draw(null));
+}
+$('shareProg').onclick=()=>{
+  if(!store.me||store.me==='guest'){ toast('Choose your name under “Coding as” first.'); return; }
+  const json=JSON.stringify(Blockly.serialization.workspaces.save(ws)); if(json.length>back.maxJson){ toast('That program is too big to share. Use “Copy program text” instead.'); return; }
+  const body={player:P().name,slug:store.me,level:L.id,json,blocks:ws.getAllBlocks(false).filter(b=>!b.isShadow()).length,t:Date.now()};
+  writeChain=writeChain.then(()=>back.saveProgram(store.me+'_'+L.id,body)).then(()=>{ toast('Shared with the team.'); renderLib(); },()=>toast('Could not share right now. Try again in a minute.'));
+};
+$('copyProg').onclick=()=>{
+  const t=JSON.stringify(Blockly.serialization.workspaces.save(ws)), manual=()=>ask('Select all of this text and copy it:',t,()=>{});
+  try{ navigator.clipboard.writeText(t).then(()=>toast('Program text copied. Paste it into a document to keep it.'),manual); }catch(e){ manual(); }
+};
+$('pasteProg').onclick=()=>ask('Paste program text here:','',v=>{ if(!v) return; try{ adopt(JSON.parse(v)); }catch(e){ toast('That does not look like a program from this page.'); } });
+(async()=>{
+  await null; /* let the rest of the page finish setting up first */
+  if(SHEET_URL) back=sheetBackend(SHEET_URL);
+  else { let api=null; try{ api=window.claude&&window.claude.use?await window.claude.use('db'):null; }catch(e){} if(api) back=claudeBackend(api); }
+  if(!back) return;
+  teamState='wait'; teamNote(); renderLib();
+  const timer=setTimeout(()=>{ if(teamState==='wait') $('teamNote').textContent='The team board cannot be reached yet. Showing this device only.'; },10000);
+  let first=true;
+  back.start(t=>{
+    clearTimeout(timer); teamState='shared'; team=t;
+    let changed=false; for(const k in store.players) if(team[k]){ const m=merged(team[k],store.players[k]); if(!sameScore(m,merged(store.players[k],null))){ store.players[k].stars=m.stars; store.players[k].best=m.best; changed=true; } }
+    if(changed) save(); teamNote(); renderBoard(); renderLevels();
+    if(first||dirty){ first=false; pushMe(); }
+  },()=>{ clearTimeout(timer); back=null; teamState='local'; teamNote(); renderLib(); },
+  ()=>{ if(teamState!=='offline'){ teamState='offline'; teamNote(); } });
+})();
+teamNote(); renderBoard();
+
+/* ---------------- main loop ---------------- */
+let lastTs=0;
+function frame(ts){
+  const el=Math.min(.05,(ts-lastTs)/1000||0); lastTs=ts;
+  if(running){ acc+=el*speed; let n=0; while(running&&acc>=DT&&n<600){ tick(); acc-=DT; n++; } }
+  if(W.bumpFlash>0) W.bumpFlash-=el;
+  for(const p of W.parts){ p.x+=p.vx*el; p.y+=p.vy*el; p.vx*=.96; p.vy*=.96; p.life-=el*1.1; } W.parts=W.parts.filter(p=>p.life>0);
+  if(curBlock!==shownBlock){ shownBlock=curBlock; ws.highlightBlock(curBlock); }
+  draw(ts); hud(); renderMissions();
+  requestAnimationFrame(frame);
+}
+setLevel(store.level||0);
+requestAnimationFrame(frame);
+
+/* small hook for testing from the console */
+window.glowbot={get ws(){return ws;},get world(){return W;},get robot(){return R;},run,setLevel,load:loadProgram,program,mk,
+  fast(maxSec){ let n=0; while(running&&n<maxSec/DT){ tick(); n++; } return {running,x:R.x,y:R.y,yaw:yaw(),arm:R.arm,missions:L.missions()}; }};
+})();
+</script>
+</body>
+</html>
