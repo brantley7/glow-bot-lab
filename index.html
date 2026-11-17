@@ -16,16 +16,16 @@ img{max-width:100%}
 /* Layout: a workbench. Practice mat and robot read-outs on the left, block code on the right; stacked on phones. */
 :root{
   --bg:#EAF2EE; --panel:#FFFFFF; --ink:#12302B; --muted:#52706A; --line:#CBDAD3;
-  --hub:#FFD21F; --hub-ink:#3A2E00; --azure:#1279B5; --magenta:#C92A78; --go:#178A4C; --stop:#C7362F;
+  --hub:#FFD21F; --hub-ink:#3A2E00; --azure:#1279B5; --magenta:#C92A78; --go:#178A4C; --stop:#C7362F; --warnbg:#FDE8E4; --warnink:#8A1F12;
   --display:"Fredoka","Trebuchet MS",system-ui,sans-serif;
   --body:"Nunito","Segoe UI",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --bg:#0C1917; --panel:#132522; --ink:#E7F3EE; --muted:#93AEA6; --line:#27433C;
-  --hub:#FFD21F; --hub-ink:#3A2E00; --azure:#58BBEE; --magenta:#F26AAE; --go:#2FB56C; --stop:#EE635B; color-scheme:dark } }
+  --hub:#FFD21F; --hub-ink:#3A2E00; --azure:#58BBEE; --magenta:#F26AAE; --go:#2FB56C; --stop:#EE635B; --warnbg:#3A1A16; --warnink:#FFB4A6; color-scheme:dark } }
 :root[data-theme="dark"]{
   --bg:#0C1917; --panel:#132522; --ink:#E7F3EE; --muted:#93AEA6; --line:#27433C;
-  --hub:#FFD21F; --hub-ink:#3A2E00; --azure:#58BBEE; --magenta:#F26AAE; --go:#2FB56C; --stop:#EE635B; color-scheme:dark }
+  --hub:#FFD21F; --hub-ink:#3A2E00; --azure:#58BBEE; --magenta:#F26AAE; --go:#2FB56C; --stop:#EE635B; --warnbg:#3A1A16; --warnink:#FFB4A6; color-scheme:dark }
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -112,6 +112,7 @@ details ul{padding-left:18px}
 #lb td{padding:6px 8px 6px 0;border-top:1px solid var(--line);white-space:nowrap}
 #lb tr.me td{font-weight:800;color:var(--azure)}
 #lb td.empty{color:var(--muted);white-space:normal}
+.alerts{list-style:none;margin:0;padding:8px 12px;border-radius:10px;background:var(--warnbg);color:var(--warnink);display:flex;flex-direction:column;gap:4px;font-size:13.5px;font-weight:700}
 .hubbtns{display:inline-flex;gap:4px}
 .cfg{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center;margin-top:6px}
 .cfg label{font-size:13px;color:var(--muted)}
@@ -166,6 +167,7 @@ details ul{padding-left:18px}
         <label class="tog" for="wobble"><input type="checkbox" id="wobble"> Real-world wobble</label>
         <label class="tog" for="jig" id="jigL" hidden><input type="checkbox" id="jig"> Launch jig</label>
       </div>
+      <ul id="alerts" class="alerts" hidden aria-live="polite"></ul>
       <div class="hud" id="hud" aria-live="off">
         <div class="chip big" id="cScore" hidden><span class="k">Score</span><b id="hScore">0</b></div>
         <div class="chip big" id="cClock" hidden><span class="k">Match</span><b id="hClock">2:30</b></div>
@@ -229,6 +231,8 @@ details ul{padding-left:18px}
         <h3>Team programs for this challenge</h3>
         <ul id="lib"></ul>
         <div class="who"><button class="btn sm" id="shareProg" type="button" hidden>Share my program</button><button class="btn sm" id="copyProg" type="button">Copy program text</button><button class="btn sm" id="pasteProg" type="button">Paste program text</button></div>
+        <div class="who"><button class="btn sm" id="openSpike" type="button">Open a SPIKE app file (.llsp3)</button><input type="file" id="spikeFile" accept=".llsp3,.llsp,.sb3" hidden></div>
+        <p class="note">Opens a program saved from the LEGO SPIKE app into the current challenge so you can test it here first.</p>
       </div>
     </section>
     <section class="code"><div id="blockly"></div><div class="tip">Drag blocks under “when program starts”</div></section>
@@ -238,6 +242,7 @@ details ul{padding-left:18px}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/blockly/10.4.3/blockly.min.js"></script>
 <script src="config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
 'use strict';
@@ -245,7 +250,7 @@ const $=id=>document.getElementById(id);
 const RAD=Math.PI/180, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 /* ---------------- robot constants (cm) ---------------- */
-const WHEEL_CM=17.5, TRACK=14, MAX_DPS=1000, ARM_DPS=240, DT=1/120;
+const WHEEL_CM=17.5, TRACK=14, MAX_DPS=1000, ARM_DPS=660, DT=1/120;
 const BODY={x0:-9.5,x1:9.5,y0:-8,y1:8}, FORK_LEN=12, FORK_HALF=3.6, SENSOR={x:8.2,y:6.3};
 
 /* ---------------- saved progress ---------------- */
@@ -418,8 +423,8 @@ const allGates=()=>W.gates.every(g=>g.hit);
 /* One practice challenge per robot-game mission, on the full BIOGLOW field.
    [mission, id, name, start side, points needed, the models that belong to it, task, tip] */
 const MC=[
- [1,'m01','Drone Survey','L',30,['drone','map'],'Lower the fork onto the drone launcher ▼, then flip the LiDAR map ▲ in the dashed survey box.','Both are near the south wall, just east of the big river. Come in from the north with the fork up, stop, then lower or lift. The short black diagonal line is a handy landmark for the color sensor.'],
- [2,'m02','Exploding Seeds','L',30,['trig','s1','s2','s3','stalk'],'Push the green trigger knob east until it stops, so all three seeds fly off the stalk.','Line up facing east on the same row as the trigger, fork up, and drive straight into it. Stay clear of the stalk itself.'],
+ [1,'m01','Drone Survey','L',20,['launch','map'],'Drive into the blue drone launcher from the west and push it until it stops. Bonus +10: flip the LiDAR map ▲ in the dashed survey box.','The launcher sits low on the south side, east of the big river. The robot starts with its side flat against the south wall in the left launch area, like your team lines it up, and drives straight east 35 inches into the launcher.',{x:26.5,y:106,d:0,arm:90}],
+ [2,'m02','Exploding Seeds','L',30,['trig','s1','s2','s3','stalk'],'Lower the fork, slide it under the seed release ▲ on the south-west side of the stalk, and lift so all three seeds fly off.','The robot starts on a mark on the launch circle, aimed diagonally at the stalk, like your team lines it up. Your team’s program lowers the arm, drives 12.7 inches, lifts the arm until it stops, then backs up 15 inches.',{x:32.7,y:100.3,d:-41,arm:90}],
  [3,'m03','Flip the Rock','L',30,['rock'],'Lift the rock ▲ to drop the research flag, then lower the fork again to put the rock back.','The rock is against the west wall, just north of the left launch area. You can start lined up under it, facing north.'],
  [4,'m04','Lucky Leaves','L',30,['leafA','leafB','katy'],'Carry both leaves out of the nest and set them down. Leave the katydid (the one with eyes) exactly where it is.','The katydid sits in a different slot every run, so look before you plan. Come in from the south, fork down under a leaf, lift, back out, and set it down outside the dashed nest.'],
  [5,'m05','Reaching Roots','L',20,['root'],'Push the root knob north all the way to the wall.','Drive north on the same line as the knob with the fork up. Slow down for the last few centimetres.'],
@@ -491,9 +496,9 @@ const LEVELS=[
   missions:()=>[{label:'Pass through the ring',done:W.gates[0].hit},{label:'Whole robot back inside the launch area',done:W.gates[0].hit&&allInHome()},{label:'No bumps',done:W.bumps===0}],
   starter:()=>[mk('my_turn',{DEG:20},{DIR:'left'}),mk('mv_move',{AMOUNT:40})]},
  ...MC.map(c=>({id:c[1],name:c[2],mission:c[0],w:236,h:114,drag:true,goalPts:c[4],own:c[5],task:c[6],
-   start:c[3]==='L'?{x:34,y:98,d:0,arm:90}:{x:200,y:96,d:180,arm:90},
+   start:c[8]||(c[3]==='L'?{x:34,y:98,d:0,arm:90}:{x:200,y:96,d:180,arm:90}),
    goal:c[6]+' ★ Do the mission. ★★ Also a clean run: no bumps and nothing else on the field moved. ★★★ Also finish with the whole robot back inside a launch area. Three-star runs post a time to the leaderboard.',
-   hint:c[7]+' Drag the robot to place it in either launch area; tap it to turn it.',
+   hint:c[7]+' Drag the robot to place it in either launch area; tap it to turn it 15°.',
    build:chalBuild,missions:chalMissions,tick:matchTick,paint:matchPaint,starter:()=>[]})),
  {id:'match',name:'Match Day',w:236,h:114,match:true,drag:true,clock:150,start:{x:34,y:98,d:0,arm:90},
   goal:'The BIOGLOW robot game. All 15 missions sit where the official field map puts them and score the official points. You get 2:30 of run time and can launch from either launch area as often as you like. Drag the robot to place it, tap it to turn it.',
@@ -501,7 +506,7 @@ const LEVELS=[
   build:matchBuild,missions:matchMissions,tick:matchTick,paint:matchPaint,starter:()=>[]}
 ];
 /* ----- mission challenges ----- */
-const NAMES={wall:'the wall',stalk:'the seed stalk',drone:'the drone',map:'the LiDAR map',trig:'the seed trigger',s1:'a seed',s2:'a seed',s3:'a seed',s4:'the tree seed',rock:'the rock',leafA:'a leaf',leafB:'a leaf',katy:'the katydid',
+const NAMES={wall:'the wall',stalk:'the seed stalk',drone:'the drone',map:'the LiDAR map',launch:'the drone launcher',trig:'the seed release',s1:'a seed',s2:'a seed',s3:'a seed',s4:'the tree seed',rock:'the rock',leafA:'a leaf',leafB:'a leaf',katy:'the katydid',
   root:'the root',ant:'the ant',fungus:'the mycelium',vine:'the vine',platform:'the research tree',camera:'the camera trap',spider:'the spider habitat',snail:'the snail habitat',cover:'the root window',cane:'the cane',tie:'the support tie',crate:'the keystone',canopy:'the building',hatch:'the compost hatch',sky:'the skylight'};
 function chalBuild(){
   const d=matchBuild(), n=L.mission, crate=d.objs.find(o=>o.id==='crate');
@@ -521,12 +526,12 @@ function chalState(){
   const n=L.mission, m=matchMissions()[n+1], mv=disturbed();
   const scored=n===10?(W.gates.every(g=>g.hit)&&m.pts>=20):m.pts>=L.goalPts;
   const what=[W.bumps?W.bumps+(W.bumps>1?' bumps':' bump')+(W.bumpWhat?', last into '+(NAMES[W.bumpWhat]||W.bumpWhat):''):'',mv.length?'moved '+mv.join(', '):''].filter(Boolean).join('; ');
-  return {m,scored,clean:W.bumps===0&&!mv.length,home:fullyHome(),what};
+  return {m,scored,clean:W.bumps===0&&!mv.length&&!W.armStrained,home:fullyHome(),what:what+(W.armStrained?(what?'; ':'')+'arm forced past its stop':'')};
 }
 function chalMissions(){
   const c=chalState(), first=L.mission===10?{label:L.task,done:c.scored}:{label:L.task,pts:c.m.pts,max:L.goalPts};
   return [first,
-    {label:'Clean run: no bumps, nothing else on the field moved',how:W.launched?c.what:'',done:W.launched&&c.clean},
+    {label:'Clean run: no bumps, nothing else on the field moved, arm never forced past its stops',how:W.launched?c.what:'',done:W.launched&&c.clean},
     {label:'Finish with the whole robot inside a launch area',done:W.launched&&c.home}];
 }
 /* ----- Match Day: the BIOGLOW field. Positions are measured from the field map in the official Robot Game Rulebook (table coordinates in cm; the mat is 202 cm wide and starts 17 cm from the left wall). ----- */
@@ -551,16 +556,16 @@ function matchBuild(){
    objs:[
     {id:'root',type:'knob',col:'#8A5A2B',x:58,y:13,r:3,rail:rail(58,13,58,5)},
     {id:'ant',type:'knob',col:'#C7362F',x:144,y:11,r:3,rail:rail(144,11,155,11)},
-    {id:'trig',type:'knob',col:'#B7D94A',x:62,y:60,r:2.5,rail:rail(62,60,71,60)},
+    {id:'launch',type:'knob',col:'#58BBEE',x:121,y:104,r:2.5,rail:rail(121,104,124,104)},
     {id:'sky',type:'knob',col:'#E0483F',x:s0[0],y:s0[1],r:2.5,rail:rail(s0[0],s0[1],s1[0],s1[1])},
     {id:'s1',type:'seed',lift:true,held:true,x:85,y:53,r:2.2},{id:'s2',type:'seed',lift:true,held:true,x:87,y:60,r:2.2},{id:'s3',type:'seed',lift:true,held:true,x:84,y:67,r:2.2},
     {id:'s4',type:'seed',lift:true,x:82.5,y:8,r:2.2},
     {id:'leafA',type:'leaf',lift:true,x:lx[0],y:12,r:2.2},{id:'katy',type:'katy',lift:true,x:slots[kp],y:12,r:2.2},{id:'leafB',type:'leaf',lift:true,x:lx[1],y:12,r:2.2},
-    {id:'crate',type:'pod',lift:true,x:56,y:100,r:3},
+    {id:'crate',type:'pod',lift:true,x:40,y:76,r:3},
     {id:'tie',type:'ring',lift:true,x:207.5,y:42,r:2.2},
     {id:'spider',type:'fragile',icon:'#151a19',x:92,y:11,r:3.2},{id:'snail',type:'fragile',icon:'#F29A00',x:124,y:40,r:3.2}],
    fix:[
-    {id:'drone',kind:'press',x:131,y:97,bx:131,by:108,br:4,art:'pad'},{id:'map',kind:'lift',x:121,y:92},
+    {id:'trig',kind:'lift',x:68.4,y:69.2},{id:'map',kind:'lift',x:121,y:92},
     {id:'rock',kind:'flip',x:23,y:56,bx:23,by:46,br:4.5,art:'rock'},
     {id:'fungus',kind:'lift',x:180,y:19,bx:180,by:6,br:5,art:'box'},
     {id:'platform',kind:'lift',x:78,y:18.8,bx:74,by:10,br:5.5,art:'tree'},{id:'camera',kind:'press',x:84,y:16},{id:'vine',kind:'lift',x:66,y:20},
@@ -578,16 +583,17 @@ function matchTick(){
   const o=W.id;
   if(!W.katyOut&&!inside(NEST,o.katy.x,o.katy.y)) W.katyOut=true;
   const a=o.ant, sp=Math.hypot(a.x-(a.px===undefined?a.x:a.px),a.y-(a.py===undefined?a.y:a.py))/DT; a.px=a.x; a.py=a.y; if(sp>W.antPeak) W.antPeak=sp;
-  const t=railT(o.trig), dirs=[[.45,-.9],[.95,.3],[.1,1]];
-  [o.s1,o.s2,o.s3].forEach((s,i)=>{ if(s.held&&t>=(i+1)/3-.03){ s.held=false; s.vx=dirs[i][0]*55; s.vy=dirs[i][1]*55; burst(s.x,s.y,8); } });
+  const dirs=[[.45,-.9],[.95,.3],[.1,1]];
+  [o.s1,o.s2,o.s3].forEach((s,i)=>{ if(s.held&&o.trig.done){ s.held=false; s.vx=dirs[i][0]*55; s.vy=dirs[i][1]*55; burst(s.x,s.y,8); } });
 }
 function matchPaint(c){
   const n=frags(), a=W.id.ant.rail;
   c.fillStyle='#D9B77E'; rr(c,a.x1+4,a.y1-6,14,12,1.5); c.fill();
   for(let i=0;i<4;i++){ c.fillStyle=i<n?['#F7CB2D','#F29A00','#4CAF68','#F4F4EE'][i]:'rgba(0,0,0,.18)'; c.beginPath(); c.ellipse(a.x1+6.5+i*3,a.y1,1,2.6,0,0,7); c.fill(); }
   for(const s of [W.id.s1,W.id.s2,W.id.s3]) if(s.held){ c.strokeStyle='#8CC56B'; c.lineWidth=.6; c.beginPath(); c.moveTo(79,60); c.lineTo(s.x,s.y); c.stroke(); }
-  if(W.id.drone.done){ c.save(); c.shadowColor='#19C3B1'; c.shadowBlur=12; disk(c,131,108,2.6,'#8FF3E6'); c.restore(); }
-  else { c.strokeStyle='#151a19'; c.lineWidth=.8; c.beginPath(); c.moveTo(131,107.4); c.lineTo(80,109); c.moveTo(131,108.6); c.lineTo(80,110); c.stroke(); disk(c,79,109.5,2.3,'#58BBEE'); disk(c,79,109.5,1,'#12302B'); }
+  disk(c,129,104,3,'#7d8a86');
+  if(railT(W.id.launch)>=.97){ c.save(); c.shadowColor='#19C3B1'; c.shadowBlur=12; disk(c,129,104,2.6,'#8FF3E6'); c.restore(); }
+  else { c.strokeStyle='#151a19'; c.lineWidth=.8; c.beginPath(); c.moveTo(129,103.4); c.lineTo(80,109); c.moveTo(129,104.6); c.lineTo(80,110); c.stroke(); disk(c,79,109.5,2.3,'#58BBEE'); disk(c,79,109.5,1,'#12302B'); }
 }
 function matchMissions(){
   const o=W.id, at=W.docks, M=(label,how,pts,max)=>({label,how,pts,max});
@@ -601,8 +607,8 @@ function matchMissions(){
   return [
    M('Equipment inspection','Robot and equipment fit in one launch area under 12 in. Yours does.',20,20),
    M('Precision tokens: '+W.tokens+' of 6 left','You lose one each time you relaunch a robot that stopped outside home.',[0,10,15,25,35,50,50][W.tokens],50),
-   M('M01 Drone Survey','Drone no longer touching the mat 20: lower the fork on the launcher ▼ and the drone swings up. Bonus +10: flip the LiDAR map ▲ in the survey area.',o.drone.done?20+(o.map.done?10:0):0,30),
-   M('M02 Exploding Seeds','10 for each seed off the stalk: push the green trigger knob. The seeds fly out and can be collected for mission 14.',seedsOut*10,30),
+   M('M01 Drone Survey','Drone no longer touching the mat 20: drive into the blue launcher lever from the west ▶ and push it until it stops. Bonus +10: flip the LiDAR map ▲ in the survey area.',railT(o.launch)>=.97?20+(o.map.done?10:0):0,30),
+   M('M02 Exploding Seeds','10 for each seed off the stalk: lower the fork, slide it under the seed release ▲ on the south-west side of the stalk, and lift. The seeds fly out and can be collected for mission 14.',seedsOut*10,30),
    M('M03 Flip the Rock','Research flag down 20: lift the rock ▲. Bonus +10: lower the fork again to put the rock back.',o.rock.stage>=1?20+(o.rock.stage===2?10:0):0,30),
    M('M04 Lucky Leaves','One leaf carried out of the nest 10. Second leaf too, with the katydid (the bright one with eyes) never moved, +20. The referee shuffles where it sits each match. Katydid outside the marked habitat: zero.',m4,30),
    M('M05 Reaching Roots','Push the root knob toward the wall. Partly extended 10, completely extended 20.',rt>=.97?20:rt>=.3?10:0,20),
@@ -630,12 +636,17 @@ function resetWorld(){
   for(const o of W.objs) if(o.id) W.id[o.id]=o;
   for(const f of W.fix) if(f.id) W.id[f.id]=f;
   W.fixed=W.rocks.map(r=>({x:r.x,y:r.y,r:r.r,own:r.id})).concat(W.fix.filter(f=>f.br).map(f=>({x:f.bx,y:f.by,r:f.br,own:f.id})));
-  placeRobot(); hideBanner();
+  placeRobot(); hideBanner(); renderAlerts();
 }
-function homeOK(x,y){ return !!W.homes&&W.homes.some(h=>Math.hypot(x-h.cx,y-h.cy)<=h.r-11.4)&&x>=13&&x<=L.w-13&&y<=L.h-13; }
+function homeOK(x,y,d){
+  if(!W||!W.homes) return false;
+  const th=d===undefined?(R?R.th:0):d*RAD, c=Math.cos(th), s=Math.sin(th), m=W.mat;
+  const pts=[[BODY.x0,BODY.y0],[BODY.x0,BODY.y1],[BODY.x1,BODY.y0],[BODY.x1,BODY.y1]].map(p=>[x+p[0]*c-p[1]*s,y+p[0]*s+p[1]*c]);
+  return W.homes.some(h=>pts.every(q=>q[0]>=0&&q[1]>=0&&q[0]<=L.w&&q[1]<=L.h&&(!m||(q[0]>=m.x&&q[0]<=m.x+m.w))&&Math.hypot(q[0]-h.cx,q[1]-h.cy)<=h.r));
+}
 function inHome(x,y){ return !W.mat||x<W.mat.x||x>W.mat.x+W.mat.w||W.homes.some(h=>Math.hypot(x-h.cx,y-h.cy)<=h.r); }
 function placeRobot(){
-  let s=L.start; const pl=L.drag&&((store.places||{})[L.id]||(L.match?store.place:null)); if(pl&&W&&homeOK(pl.x,pl.y)) s=pl;
+  let s=L.start; const pl=L.drag&&((store.places||{})[L.id]||(L.match?store.place:null)); if(pl&&W&&homeOK(pl.x,pl.y,pl.d)) s=pl;
   R={x:s.x,y:s.y,th:s.d*RAD,th0:s.d*RAD,wl:0,wr:0,degL:0,degR:0,pair:CFG.drive,arm:L.start.arm,armRate:0,moveSpeed:50,armSpeed:75,rotCm:17.5,slipL:1,slipR:1};
   if(W){ W.trail=[]; for(const o of W.objs) o.car=false;
     if(L.mission===13&&W.id.crate){ const k=W.id.crate, q=toWorld(16.5,0); k.car=true; k.cl=[7,0]; k.x=q[0]; k.y=q[1]; } }
@@ -700,19 +711,31 @@ function blocked(){
   return false;
 }
 const inFork=(x,y)=>{ const l=toLocal(x,y); return l[0]>=9.5&&l[0]<=22.5&&Math.abs(l[1])<=4.4; };
+/* problems a real robot would have: hitting walls or models, and forcing the arm past its stops */
+function wallName(){ const d=[['west',R.x],['east',L.w-R.x],['north',R.y],['south',L.h-R.y]].sort((a,b)=>a[1]-b[1]); return 'the '+d[0][0]+' wall'; }
+function thingName(k){ return k==='wall'?wallName():(NAMES[k]||'an obstacle'); }
+function problem(key,text){ W.alerts=W.alerts||{}; const a=W.alerts[key]; if(a) a.n++; else W.alerts[key]={text,n:1}; renderAlerts(); }
+function renderAlerts(){ const ul=$('alerts'); if(!ul) return; ul.textContent=''; const list=Object.values((W&&W.alerts)||{}); ul.hidden=!list.length;
+  list.forEach(a=>{ const li=document.createElement('li'); li.textContent='⚠ '+a.text+(a.n>1?' ('+a.n+' times)':''); ul.append(li); }); }
+function armProblem(kind){ const pt='motor '+CFG.fork; W.armStrained=true;
+  if(kind==='down') problem('arm-down','The arm ('+pt+') reached the mat and kept pushing down. On the real robot that can lift the wheels off the mat or strain the gears. Stop at the bottom: ask for fewer degrees, or use “go to position”.');
+  else if(kind==='up') problem('arm-up','The arm ('+pt+') reached the top and kept pushing up. Ask it to turn only as far as it can go, about 90°.');
+  else problem('arm-on:'+W.hitBy,'The arm ('+pt+') pressed down on '+thingName(W.hitBy)+' and could not lower any further.'); }
 function physics(dt){
   R.degL+=R.wl*dt; R.degR+=R.wr*dt; if(W.mot) for(const q in W.mot) W.mot[q].pos+=W.mot[q].rate*dt;
   if(R.wl||R.wr){
     const px=R.x,py=R.y,pt=R.th;
     const vl=R.wl/360*WHEEL_CM*R.slipL, vr=R.wr/360*WHEEL_CM*R.slipR, v=(vl+vr)/2, om=(vl-vr)/TRACK;
     R.th+=om*dt; R.x+=v*Math.cos(R.th)*dt; R.y+=v*Math.sin(R.th)*dt;
-    if(blocked()){ R.x=px;R.y=py;R.th=pt; W.pressT=W.t; if(!W.wasBump&&!(L.own&&L.own.indexOf(W.hitBy)>=0)){ W.bumps++; W.bumpFlash=.35; W.bumpWhat=W.hitBy; } W.wasBump=true; } else W.wasBump=false;
+    if(blocked()){ R.x=px;R.y=py;R.th=pt; W.pressT=W.t; if(!W.wasBump&&!(L.own&&L.own.indexOf(W.hitBy)>=0)&&!(W.hitBy==='wall'&&W.homes&&inHome(R.x,R.y))){ W.bumps++; W.bumpFlash=.35; W.bumpWhat=W.hitBy; problem('hit:'+(W.hitBy==='wall'?wallName():W.hitBy),'Ran into '+thingName(W.hitBy)+'.'); } W.wasBump=true; } else W.wasBump=false;
     const tr=W.trail, last=tr[tr.length-1];
     if(!last||Math.hypot(last[0]-R.x,last[1]-R.y)>1.5){ tr.push([R.x,R.y]); if(tr.length>1500) tr.shift(); }
   }
   if(R.armRate){
     const a0=R.arm; R.arm=clamp(a0+R.armRate*dt,0,90);
     if(R.arm<a0&&blocked()) R.arm=a0;
+    const strain=(R.arm<=0&&R.armRate<0)?'down':(R.arm>=90&&R.armRate>0)?'up':(R.armRate<0&&R.arm===a0&&a0>0)?'object':null;
+    if(strain){ W.strainT=(W.strainT||0)+dt; if(W.strainT>.2&&!W.strainOn){ W.strainOn=true; armProblem(strain); } } else { W.strainT=0; W.strainOn=false; }
     if(a0<22&&R.arm>=22){
       for(const o of W.objs) if(o.lift&&!o.car&&!o.held&&!o.ghost&&inFork(o.x,o.y)){ const l=toLocal(o.x,o.y); o.car=true; o.cl=[l[0]-9.5,l[1]]; o.vx=o.vy=0; W.lifted=true; }
       for(const f of W.fix) if(inFork(f.x,f.y)){ if(f.kind==='lift'&&!f.done){ f.done=true; burst(f.x,f.y,14); } else if(f.kind==='flip'&&f.stage===0){ f.stage=1; burst(f.x,f.y,14); } }
@@ -786,7 +809,8 @@ function* driveFor(l,r,amt,unit){
   const my=++driveTok;
   if(unit==='seconds'){ setDrive(l,r); const t0=W.t; while(W.t-t0<amt-1e-9&&driveTok===my) yield; }
   else{ const deg=toDeg(amt,unit), m=Math.max(Math.abs(l),Math.abs(r)); let p=0;
-    while(m>1e-6&&driveTok===my){ const rem=deg-p; if(rem<=1e-6) break; const k=Math.min(1,rem/(m*DT)); setDrive(l*k,r*k); yield; p+=m*k*DT; } }
+    let st=0; while(m>1e-6&&driveTok===my){ const rem=deg-p; if(rem<=1e-6) break; const k=Math.min(1,rem/(m*DT)); setDrive(l*k,r*k); yield;
+      if(W.wasBump){ if((st+=DT)>.5) break; } else { st=0; p+=m*k*DT; } } } /* a stalled move ends, like SPIKE's stall detection */
   if(driveTok===my){ R.wl=0;R.wr=0; }
 }
 function* armFor(dir,amt,unit,spd){
@@ -794,12 +818,13 @@ function* armFor(dir,amt,unit,spd){
   const my=++armTok, rate=(spd===undefined?R.armSpeed:spd)/100*ARM_DPS*dir; R.armRate=rate;
   if(unit==='seconds'){ const t0=W.t; while(W.t-t0<amt-1e-9&&armTok===my) yield; }
   else{ const deg=unit==='rotations'?amt*360:amt, m=Math.abs(rate); let p=0;
-    while(m>1e-6&&armTok===my){ const rem=deg-p; if(rem<=1e-6) break; const k=Math.min(1,rem/(m*DT)); R.armRate=rate*k; yield; p+=m*k*DT; } }
+    let st=0; while(m>1e-6&&armTok===my){ const rem=deg-p; if(rem<=1e-6) break; const k=Math.min(1,rem/(m*DT)); R.armRate=rate*k; const a0=R.arm; yield;
+      if(Math.abs(R.arm-a0)<1e-6){ if((st+=DT)>.3) break; } else { st=0; p+=m*k*DT; } } } /* arm at its stop: the block ends */
   if(armTok===my) R.armRate=0;
 }
 function* armTo(target,spd){
   target=clamp(target,0,90); const my=++armTok, v=Math.max(1,Math.abs(spd===undefined?R.armSpeed:spd)); R.armRate=v/100*ARM_DPS*(target>R.arm?1:-1); const t0=W.t;
-  while(armTok===my&&Math.abs(R.arm-target)>.01&&W.t-t0<6) yield;
+  let st=0; while(armTok===my&&Math.abs(R.arm-target)>.01&&W.t-t0<6){ const a0=R.arm; yield; if(Math.abs(R.arm-a0)<1e-6){ if((st+=DT)>.3) break; } else st=0; }
   if(armTok===my) R.armRate=0;
 }
 /* motors: the fork port moves the fork, the drive ports turn one wheel, any other port is a motor with nothing attached */
@@ -861,7 +886,7 @@ function* exec(b){
     case 'my_fork_up': yield* armTo(90); break;
     case 'my_fork_down': yield* armTo(0); break;
     case 'my_turn': { const want=Math.abs(num(b,'DEG'))*RAD, dir=(f('DIR')==='right'?1:-1)*(num(b,'DEG')<0?-1:1), th0=R.th, t0=W.t, my=++driveTok, v=Math.min(Math.abs(sp()),400);
-      while(driveTok===my&&W.t-t0<8){ const rem=want-Math.abs(R.th-th0); if(rem<=.0015) break; const k=clamp(rem/(25*RAD),.06,1)*v; setDrive(k*dir,-k*dir); yield; }
+      let st=0; while(driveTok===my&&W.t-t0<8){ const rem=want-Math.abs(R.th-th0); if(rem<=.0015) break; const k=clamp(rem/(25*RAD),.06,1)*v; setDrive(k*dir,-k*dir); yield; if(W.wasBump){ if((st+=DT)>.5) break; } else st=0; }
       if(driveTok===my){ R.wl=0;R.wr=0; } break; }
     case 'lt_write': W.display=String(ev(b.getInputTargetBlock('TEXT'))).slice(0,24); break;
     case 'sd_beep': { const d=num(b,'SECS'); beep(midi(b.getInputTargetBlock('NOTE')?num(b,'NOTE'):60),Math.min(d,2)); const t0=W.t; while(W.t-t0<d) yield; break; }
@@ -917,7 +942,7 @@ function run(){
   if(L.sloppy&&!$('jig').checked){ R.x+=(Math.random()-.5)*3; R.y+=(Math.random()-.5)*3; R.th+=(Math.random()-.5)*20*RAD; R.th0=R.th; }
   W.launched=true; hideBanner(); if(lost) toast('Relaunched from outside home: one precision token lost.');
   if($('wobble').checked){ R.slipL=1+(Math.random()-.5)*.05; R.slipR=1+(Math.random()-.5)*.05; }
-  W.timer0=W.t; W.vars={}; W.display=''; W.center=''; W.btnDown={}; W.btnEdge={}; W.vol=100; W.pairWarned=false; R.pair=CFG.drive; W.mot={}; W.motZero={}; PORT_LIST.forEach(q=>{ W.motZero[q]=motPos(q); });
+  W.timer0=W.t; W.vars={}; W.display=''; W.center=''; W.btnDown={}; W.btnEdge={}; W.alerts={}; W.armStrained=false; W.strainT=0; W.strainOn=false; renderAlerts(); W.vol=100; W.pairWarned=false; R.pair=CFG.drive; W.mot={}; W.motZero={}; PORT_LIST.forEach(q=>{ W.motZero[q]=motPos(q); });
   threads=tops.map(b=>({gen:stack(b.getNextBlock()),done:false,hat:b.id}));
   W.hats=hats.map(b=>({b,prev:true,thread:null}));
   running=true; acc=0; setRunBtn();
@@ -971,7 +996,7 @@ function finish(why){
     if(stars===3&&!(Number(me.times[L.id])<=t)){ me.times[L.id]=t; rec=true; }
     save(); renderLevels(); pushMe(); burst(R.x,R.y,40);
     const i=LEVELS.indexOf(L);
-    const msg=stars===1?'Mission done! ★☆☆ For ★★, no bumps and nothing else moved'+(c.what?' (this run: '+c.what+')':'')+'.'
+    const msg=stars===1?'Mission done! ★☆☆ For ★★, no bumps, nothing else moved and no forcing the arm'+(c.what?' (this run: '+c.what+')':'')+'.'
       :stars===2?'Clean run! ★★☆ For ★★★, finish with the whole robot back inside a launch area.'
       :'Perfect run! ★★★ in '+t+' s'+(rec?', your best time.':'.');
     banner(msg,'Next challenge',()=>setLevel(i+1),stars===3);
@@ -1174,10 +1199,12 @@ const ptr=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.
 cv.addEventListener('pointerdown',e=>{ if(!L.drag||running||!W.homes) return; const p=ptr(e); if(Math.hypot(p[0]-R.x,p[1]-R.y)>14) return;
   if(!homeOK(R.x,R.y)) placeRobot(); dragging={sx:p[0],sy:p[1],ox:R.x,oy:R.y,moved:0}; cv.setPointerCapture(e.pointerId); e.preventDefault(); });
 cv.addEventListener('pointermove',e=>{ if(!dragging) return; const p=ptr(e); dragging.moved=Math.max(dragging.moved,Math.hypot(p[0]-dragging.sx,p[1]-dragging.sy));
-  if(dragging.moved>1.5){ const tx=dragging.ox+p[0]-dragging.sx, ty=dragging.oy+p[1]-dragging.sy, h=tx<L.w/2?W.homes[0]:W.homes[1]; let dx=tx-h.cx, dy=ty-h.cy; const d=Math.hypot(dx,dy)||1, m=h.r-11.5; if(d>m){ dx*=m/d; dy*=m/d; }
-    R.x=clamp(h.cx+dx,13,L.w-13); R.y=clamp(h.cy+dy,13,L.h-13); } });
-const endDrag=()=>{ if(!dragging) return; if(dragging.moved<=1.5){ R.th+=45*RAD; } else if(!homeOK(R.x,R.y)){ R.x=dragging.ox; R.y=dragging.oy; }
-  const d=Math.round(R.th/RAD/45)*45%360; (store.places=store.places||{})[L.id]={x:Math.round(R.x*10)/10,y:Math.round(R.y*10)/10,d}; save(); dragging=null; placeRobot(); };
+  if(dragging.moved>1.5){ const tx=dragging.ox+p[0]-dragging.sx, ty=dragging.oy+p[1]-dragging.sy, h=tx<L.w/2?W.homes[0]:W.homes[1]; let dx=tx-h.cx, dy=ty-h.cy; const d=Math.hypot(dx,dy)||1, m=h.r-4; if(d>m){ dx*=m/d; dy*=m/d; }
+    R.x=clamp(h.cx+dx,6,L.w-6); R.y=clamp(h.cy+dy,6,L.h-6); } });
+const endDrag=()=>{ if(!dragging) return;
+  if(dragging.moved<=1.5){ R.th+=15*RAD; if(!homeOK(R.x,R.y)){ R.th-=15*RAD; toast('No room to turn there. Drag the robot further into the launch area first.'); } }
+  else if(!homeOK(R.x,R.y)){ R.x=dragging.ox; R.y=dragging.oy; toast('The whole robot has to fit inside a launch area.'); }
+  const d=Math.round(R.th/RAD/15)*15%360; (store.places=store.places||{})[L.id]={x:Math.round(R.x*10)/10,y:Math.round(R.y*10)/10,d}; save(); dragging=null; placeRobot(); };
 cv.addEventListener('pointerup',endDrag); cv.addEventListener('pointercancel',endDrag);
 function docksLabel(){ const o=ORDERS[store.docks||0]; $('docks').textContent='Docks: mine '+o[0]+' · city '+o[1]+' · farm '+o[2]; }
 $('docks').onclick=()=>{ if(running) finish('user'); store.docks=((store.docks||0)+1)%6; save(); docksLabel(); resetWorld(); lastMissions=''; };
@@ -1366,6 +1393,179 @@ $('pasteProg').onclick=()=>ask('Paste program text here:','',v=>{ if(!v) return;
 })();
 teamNote(); renderBoard();
 
+/* ---------------- open a SPIKE app program (.llsp3) ----------------
+   A .llsp3 file is a zip holding scratch.sb3, itself a zip holding project.json (Scratch 3 format).
+   Word blocks are converted to this page's blocks; anything without a match is skipped and listed. */
+const SPIKE_COLORS={'-1':'none','0':'black','1':'red','2':'blue','3':'blue','4':'blue','5':'green','6':'green','7':'yellow','8':'yellow','9':'red','10':'white'};
+function convertSpike(project){
+  const skipped={}, out=[];
+  const skip=op=>{ skipped[op]=(skipped[op]||0)+1; };
+  for(const t of project.targets||[]){
+    const B=t.blocks||{};
+    const inp=(b,name)=>{ const i=b.inputs&&b.inputs[name]; if(!i) return null; const v=i[1];
+      if(Array.isArray(v)) return v[0]===12?{vari:v[1]}:{lit:v[1]};
+      if(typeof v==='string'&&B[v]){ const sh=B[v]; if(sh.shadow){ const fk=Object.keys(sh.fields||{})[0]; if(fk) return {lit:sh.fields[fk][0]}; const ik=Object.keys(sh.inputs||{})[0]; return ik?inp(sh,ik):null; } return {block:v}; }
+      return null; };
+    const fld=(b,name)=>{ if(b.fields&&b.fields[name]) return b.fields[name][0]; const x=inp(b,name); return x&&x.lit!==undefined?String(x.lit):null; };
+    const port=(b,name='PORT')=>{ const v=String(fld(b,name)||'A'); return /^[A-F]/.test(v)?v[0]:'A'; };
+    const shadowOf=v=>{ const n=Number(v); return String(v).trim()!==''&&isFinite(n)?{type:'math_number',fields:{NUM:n}}:{type:'text',fields:{TEXT:String(v==null?'':v)}}; };
+    const valIn=(b,name,dflt=0)=>{ const x=inp(b,name); if(!x) return {shadow:shadowOf(dflt)}; if(x.vari!==undefined) return {shadow:shadowOf(dflt),block:{type:'variables_get',fields:{VAR:{name:String(x.vari)}}}};
+      if(x.block){ const r=rep(x.block); return r?{shadow:shadowOf(dflt),block:r}:{shadow:shadowOf(dflt)}; } return {shadow:shadowOf(x.lit)}; };
+    const boolIn=(b,name)=>{ const x=inp(b,name); if(x&&x.block){ const r=rep(x.block); if(r) return {block:r}; } return null; };
+    const sub=(b,name)=>{ const i=b.inputs&&b.inputs[name]; const id=i&&i[1]; const r=id&&typeof id==='string'?chain(id):null; return r?{block:r}:null; };
+    const mk2=(type,fields,inputs)=>{ const o={type}; if(fields) o.fields=fields; if(inputs){ const ii={}; for(const k in inputs) if(inputs[k]) ii[k]=inputs[k]; if(Object.keys(ii).length) o.inputs=ii; } return o; };
+    const mvDir=v=>({forward:'fwd',back:'back',backward:'back',clockwise:'right',counterclockwise:'left'})[v]||'fwd';
+    const unit=v=>({cm:'cm',inches:'in',in:'in',rotations:'rotations',degrees:'degrees',seconds:'seconds'})[v]||'cm';
+    const munit=v=>({rotations:'rotations',degrees:'degrees',seconds:'seconds'})[v]||'degrees';
+    const cmp=v=>({'<':'<','>':'>','=':'=','lessThan':'<','greaterThan':'>','equalTo':'='})[v]||'<';
+    const color=v=>SPIKE_COLORS[String(v)]||(COLORS.some(c=>c[1]===v)?v:'none');
+    function rep(id){ const b=B[id]; if(!b||Array.isArray(b)) return null; const op=b.opcode, I=(n,d)=>valIn(b,n,d);
+      switch(op){
+        case 'operator_add': return mk2('op_arith',{OP:'+'},{A:I('NUM1'),B:I('NUM2')});
+        case 'operator_subtract': return mk2('op_arith',{OP:'-'},{A:I('NUM1'),B:I('NUM2')});
+        case 'operator_multiply': return mk2('op_arith',{OP:'*'},{A:I('NUM1'),B:I('NUM2')});
+        case 'operator_divide': return mk2('op_arith',{OP:'/'},{A:I('NUM1'),B:I('NUM2')});
+        case 'operator_lt': return mk2('op_cmp',{OP:'<'},{A:I('OPERAND1'),B:I('OPERAND2')});
+        case 'operator_gt': return mk2('op_cmp',{OP:'>'},{A:I('OPERAND1'),B:I('OPERAND2')});
+        case 'operator_equals': return mk2('op_cmp',{OP:'='},{A:I('OPERAND1'),B:I('OPERAND2')});
+        case 'operator_and': return mk2('op_logic',{OP:'and'},{A:boolIn(b,'OPERAND1'),B:boolIn(b,'OPERAND2')});
+        case 'operator_or': return mk2('op_logic',{OP:'or'},{A:boolIn(b,'OPERAND1'),B:boolIn(b,'OPERAND2')});
+        case 'operator_not': return mk2('op_not',null,{A:boolIn(b,'OPERAND')});
+        case 'operator_random': return mk2('op_random',null,{A:I('FROM',1),B:I('TO',10)});
+        case 'operator_join': return mk2('op_join',null,{A:I('STRING1',''),B:I('STRING2','')});
+        case 'operator_letter_of': return mk2('op_letter',null,{N:I('LETTER',1),S:I('STRING','')});
+        case 'operator_length': return mk2('op_length',null,{A:I('STRING','')});
+        case 'operator_contains': return mk2('op_contains',null,{A:I('STRING1',''),B:I('STRING2','')});
+        case 'operator_mod': return mk2('op_mod',null,{A:I('NUM1'),B:I('NUM2')});
+        case 'operator_round': return mk2('op_round',null,{A:I('NUM')});
+        case 'operator_mathop': { const m={abs:'abs',floor:'floor',ceiling:'ceil',sqrt:'sqrt',sin:'sin',cos:'cos',tan:'tan',asin:'asin',acos:'acos',atan:'atan',ln:'ln',log:'log','e ^':'exp','10 ^':'pow10'}; return mk2('op_math',{OP:m[fld(b,'OPERATOR')]||'abs'},{A:I('NUM')}); }
+        case 'flipperoperator_isInBetween': return mk2('op_between',null,{V:I('VALUE'),LO:I('LOW'),HI:I('HIGH')});
+        case 'data_variable': return mk2('variables_get',{VAR:{name:String(fld(b,'VARIABLE'))}});
+        case 'argument_reporter_string_number': case 'argument_reporter_boolean': return mk2('variables_get',{VAR:{name:String(fld(b,'VALUE'))}});
+        case 'flippersensors_isColor': return mk2('sn_is_color',{PORT:port(b),COLOR:color(fld(b,'VALUE'))});
+        case 'flippersensors_color': return mk2('sn_color',{PORT:port(b)});
+        case 'flippersensors_isReflectivity': return mk2('sn_reflect_cmp',{PORT:port(b),OP:cmp(fld(b,'COMPARATOR'))},{VAL:I('VALUE',50)});
+        case 'flippersensors_reflectivity': return mk2('sn_reflect',{PORT:port(b)});
+        case 'flippersensors_orientationAxis': return mk2('sn_axis',{AX:String(fld(b,'AXIS')||'yaw')});
+        case 'flippersensors_timer': case 'sensing_timer': return mk2('sn_timer');
+        case 'flippersensors_buttonIsPressed': return mk2('sn_button',{BTN:String(fld(b,'BUTTON')||'left'),EV:fld(b,'EVENT')==='released'?'released':'pressed'});
+        case 'flippersensors_distance': return mk2('sn_dist',{PORT:port(b),UNIT:unit(fld(b,'UNIT'))==='in'?'in':(fld(b,'UNIT')==='%'?'%':'cm')});
+        case 'flippersensors_isDistance': return mk2('sn_dist_is',{PORT:port(b),OP:cmp(fld(b,'COMPARATOR')),UNIT:unit(fld(b,'UNIT'))==='in'?'in':'cm'},{VAL:I('VALUE',15)});
+        case 'flippersensors_isPressed': return mk2('sn_force_is',{PORT:port(b),EV:fld(b,'OPTION')==='released'?'released':'pressed'});
+        case 'flippersensors_force': return mk2('sn_force',{PORT:port(b)});
+        case 'flippersensors_isTilted': return mk2('sn_tilted');
+        case 'flippersensors_isorientation': return mk2('sn_orient',{FACE:String(fld(b,'ORIENTATION')||'top')});
+        case 'flippersensors_ismotion': return mk2('sn_gesture');
+        case 'flippermotor_absolutePosition': return mk2('mt_pos',{PORT:port(b)});
+        case 'flippermotor_speed': return mk2('mt_speed_r',{PORT:port(b)});
+        case 'flippermoremotor_position': return mk2('mt_rel',{PORT:port(b)});
+      }
+      skip(op); return null; }
+    function stmt(id){ const b=B[id]; const op=b.opcode, I=(n,d)=>valIn(b,n,d);
+      switch(op){
+        case 'flippermove_move': return mk2('mv_move',{DIR:mvDir(fld(b,'DIRECTION')),UNIT:unit(fld(b,'UNIT'))},{AMOUNT:I('VALUE',10)});
+        case 'flippermove_startMove': return mk2('mv_start_dir',{DIR:mvDir(fld(b,'DIRECTION'))});
+        case 'flippermove_steer': return mk2('mv_steer',{UNIT:unit(fld(b,'UNIT'))},{STEER:I('STEERING',0),AMOUNT:I('VALUE',10)});
+        case 'flippermove_startSteer': return mk2('mv_start_steer',null,{STEER:I('STEERING',0)});
+        case 'flippermove_stopMove': return mk2('mv_stop');
+        case 'flippermove_movementSpeed': return mk2('mv_speed',null,{SPEED:I('SPEED',50)});
+        case 'flippermove_setMovementPair': { const pr=String(fld(b,'PAIR')||'AB').replace(/[^A-F]/g,''); return mk2('mv_motors',{PAIR:pr.length===2?pr:'AB'}); }
+        case 'flippermove_setDistance': { const d=Number(fld(b,'DISTANCE'))||17.5; return mk2('mv_rotcm',null,{CM:{shadow:shadowOf(fld(b,'UNIT')==='in'?Math.round(d*2.54*100)/100:d)}}); }
+        case 'flippermoremove_moveDistanceAtSpeed': return mk2('mv_tank',{UNIT:unit(fld(b,'UNIT'))},{AMOUNT:I('DISTANCE',10),L:I('LEFT',50),R:I('RIGHT',50)});
+        case 'flippermoremove_startDualSpeed': case 'flippermoremove_startDualPower': return mk2('mv_start_tank',null,{L:I('LEFT',50),R:I('RIGHT',50)});
+        case 'flippermoremove_startSteerAtSpeed': case 'flippermoremove_startSteerAtPower': return mk2('mv_start_steer_speed',null,{STEER:I('STEERING',0),SPEED:I(op.endsWith('Power')?'POWER':'SPEED',50)});
+        case 'flippermoremove_steerDistanceAtSpeed': return mk2('mv_steer_speed',{UNIT:unit(fld(b,'UNIT'))},{STEER:I('STEERING',0),AMOUNT:I('DISTANCE',10),SPEED:I('SPEED',50)});
+        case 'flippermoremove_movementSetStopMethod': return mk2('mv_stop_method');
+        case 'flippermoremove_movementSetAcceleration': return mk2('mv_accel');
+        case 'flippermotor_motorTurnForDirection': { const ps=String(fld(b,'PORT')||'A').replace(/[^A-F]/g,''); if(ps.length>1) skipped['several motors in one block (only '+ps[0]+' kept)']=1;
+          const d=fld(b,'DIRECTION'); return mk2('mt_run_for',{PORT:ps[0]||'A',DIR:d==='counterclockwise'?'ccw':'cw',UNIT:munit(fld(b,'UNIT'))},{AMOUNT:I('VALUE',90)}); }
+        case 'flippermotor_motorGoDirectionToPosition': { const d=fld(b,'DIRECTION'); return mk2('mt_goto',{PORT:port(b),DIR:d==='clockwise'?'cw':d==='counterclockwise'?'ccw':'short'},{POS:I('POSITION',0)}); }
+        case 'flippermotor_motorStartDirection': return mk2('mt_start',{PORT:port(b),DIR:fld(b,'DIRECTION')==='counterclockwise'?'ccw':'cw'});
+        case 'flippermotor_motorStop': return mk2('mt_stop',{PORT:port(b)});
+        case 'flippermotor_motorSetSpeed': return mk2('mt_speed',{PORT:port(b)},{SPEED:I('SPEED',75)});
+        case 'flippermoremotor_motorTurnForSpeed': return mk2('mt_run_for_speed',{PORT:port(b),UNIT:munit(fld(b,'UNIT'))},{AMOUNT:I('VALUE',90),SPEED:I('SPEED',75)});
+        case 'flippermoremotor_motorStartPower': case 'flippermoremotor_motorStartSpeed': return mk2('mt_start_speed',{PORT:port(b)},{SPEED:I(op.endsWith('Power')?'POWER':'SPEED',75)});
+        case 'flippermoremotor_motorGoToRelativePosition': return mk2('mt_goto_rel',{PORT:port(b)},{POS:I('POSITION',0),SPEED:I('SPEED',75)});
+        case 'flippermoremotor_motorSetDegreeCounted': return mk2('mt_set_rel',{PORT:port(b)},{POS:I('VALUE',0)});
+        case 'flippersensors_resetYaw': return mk2('sn_reset_yaw');
+        case 'flippersensors_resetTimer': case 'sensing_resettimer': return mk2('sn_reset_timer');
+        case 'flipperlight_lightDisplayText': case 'flipperdisplay_ledText': return mk2('lt_write',null,{TEXT:I('TEXT','Hello')});
+        case 'flipperlight_lightDisplayOff': case 'flipperdisplay_displayOff': return mk2('lt_clear');
+        case 'flipperlight_lightDisplayImageOn': return mk2('lt_image',{IMG:'♥'});
+        case 'flipperlight_lightDisplayImageOnForTime': return mk2('lt_image_for',{IMG:'♥'},{SECS:I('VALUE',2)});
+        case 'flipperlight_centerButtonLight': return mk2('lt_center',{C:'green'});
+        case 'flippersound_beepForTime': return mk2('sd_beep',null,{NOTE:I('NOTE',60),SECS:I('DURATION',0.2)});
+        case 'flippersound_beep': return mk2('sd_beep_start',null,{NOTE:I('NOTE',60)});
+        case 'flippersound_stopSound': return mk2('sd_stop');
+        case 'flippersound_playSoundUntilDone': return mk2('sd_play',{SND:'cat'});
+        case 'flippersound_playSound': return mk2('sd_start_sound',{SND:'cat'});
+        case 'control_wait': return mk2('ct_wait',null,{SECS:I('DURATION',1)});
+        case 'control_repeat': return mk2('ct_repeat',null,{TIMES:I('TIMES',10),DO:sub(b,'SUBSTACK')});
+        case 'control_forever': return mk2('ct_forever',null,{DO:sub(b,'SUBSTACK')});
+        case 'control_if': return mk2('ct_if',null,{COND:boolIn(b,'CONDITION'),DO:sub(b,'SUBSTACK')});
+        case 'control_if_else': return mk2('ct_ifelse',null,{COND:boolIn(b,'CONDITION'),DO:sub(b,'SUBSTACK'),ELSE:sub(b,'SUBSTACK2')});
+        case 'control_wait_until': return mk2('ct_wait_until',null,{COND:boolIn(b,'CONDITION')});
+        case 'control_repeat_until': return mk2('ct_repeat_until',null,{COND:boolIn(b,'CONDITION'),DO:sub(b,'SUBSTACK')});
+        case 'control_stop': case 'flippercontrol_stop': { const o=String(fld(b,'STOP_OPTION')||'all'); return o.indexOf('other')>=0?mk2('ct_stop_other'):mk2('ct_stop_opt',{OPT:o.indexOf('this')>=0?'this':'all'}); }
+        case 'flippercontrol_stopOtherStacks': return mk2('ct_stop_other');
+        case 'event_broadcast': return mk2('ev_broadcast',{MSG:String(fld(b,'BROADCAST_INPUT')||'message1')});
+        case 'event_broadcastandwait': return mk2('ev_broadcast_wait',{MSG:String(fld(b,'BROADCAST_INPUT')||'message1')});
+        case 'data_setvariableto': return mk2('variables_set',{VAR:{name:String(fld(b,'VARIABLE'))}},{VALUE:I('VALUE',0)});
+        case 'data_changevariableby': return mk2('math_change',{VAR:{name:String(fld(b,'VARIABLE'))}},{DELTA:I('VALUE',1)});
+        case 'procedures_call': { const m=b.mutation||{}, ids=JSON.parse(m.argumentids||'[]'), name=procName(m.proccode), names=procArgs[m.proccode]||ids.map((x,i)=>'input'+(i+1));
+          const ins={}; ids.forEach((aid,i)=>{ ins['ARG'+i]=valIn(b,aid,0); }); return Object.assign(mk2('procedures_callnoreturn',null,ins),{extraState:{name,params:names}}); }
+      }
+      skip(op); return null; }
+    function chain(id){ let head=null, tail=null;
+      while(id){ const b=B[id]; if(!b) break; const r=stmt(id); if(r){ if(tail) tail.next={block:r}; else head=r; tail=r; } id=b.next; }
+      return head; }
+    const procName=pc=>String(pc||'my block').replace(/%[sbn]/g,'').replace(/\s+/g,' ').trim()||'my block';
+    const procArgs={};
+    for(const id in B){ const b=B[id]; if(b&&b.opcode==='procedures_prototype'&&b.mutation) procArgs[b.mutation.proccode]=JSON.parse(b.mutation.argumentnames||'[]'); }
+    const hatOf=b=>{ switch(b.opcode){
+        case 'flipperevents_whenProgramStarts': case 'event_whenflagclicked': return mk2('ev_start');
+        case 'flipperevents_whenButton': return mk2('ev_button',{BTN:String(fld(b,'BUTTON')||'left'),EV:'pressed'});
+        case 'flipperevents_whenColor': return mk2('ev_color',{PORT:port(b),COLOR:color(fld(b,'OPTION'))});
+        case 'flipperevents_whenTimer': return mk2('ev_timer',null,{VAL:valIn(b,'VALUE',5)});
+        case 'flipperevents_whenCondition': return mk2('ev_cond',null,{COND:boolIn(b,'CONDITION')});
+        case 'flipperevents_whenPressed': return mk2('ev_force',{PORT:port(b),EV:fld(b,'OPTION')==='released'?'released':'pressed'});
+        case 'flipperevents_whenDistance': return mk2('ev_dist',{PORT:port(b),OP:cmp(fld(b,'COMPARATOR')),UNIT:'cm'},{VAL:valIn(b,'VALUE',15)});
+        case 'event_whenbroadcastreceived': return mk2('ev_receive',{MSG:String(fld(b,'BROADCAST_OPTION')||'message1')});
+        case 'procedures_definition': { const pr=b.inputs&&b.inputs.custom_block&&B[b.inputs.custom_block[1]], m=(pr&&pr.mutation)||{};
+          return Object.assign(mk2('procedures_defnoreturn',{NAME:procName(m.proccode)}),{extraState:{params:(JSON.parse(m.argumentnames||'[]')).map(n=>({name:n}))}}); }
+      } return null; };
+    for(const id in B){ const b=B[id]; if(!b||Array.isArray(b)||!b.topLevel||b.shadow) continue;
+      const h=hatOf(b); if(!h){ skip(b.opcode); continue; }
+      h.x=Math.round((b.x||0)*.8)+20; h.y=Math.round((b.y||0)*.8)+20;
+      const body=chain(b.next); if(body){ if(h.type==='procedures_defnoreturn') h.inputs={STACK:{block:body}}; else h.next={block:body}; }
+      out.push(h); }
+  }
+  return {blocks:out,skipped};
+}
+async function importSpike(buf){
+  if(!window.JSZip) throw new Error('The file reader did not load. Check the internet connection and reload the page.');
+  let zip=await JSZip.loadAsync(buf), f=zip.file('project.json');
+  if(!f){ const inner=zip.file('scratch.sb3'); if(!inner) throw new Error('That file does not look like a SPIKE program.'); zip=await JSZip.loadAsync(await inner.async('arraybuffer')); f=zip.file('project.json'); }
+  if(!f) throw new Error('That file does not look like a SPIKE program.');
+  const project=JSON.parse(await f.async('string'));
+  if(project.targets&&project.targets.some(t=>Object.values(t.blocks||{}).some(b=>b&&b.opcode&&/^(flipper|horizontal)/.test(b.opcode)))===false&&!(project.targets||[]).some(t=>Object.keys(t.blocks||{}).length))
+    throw new Error('That file has no word blocks in it. Python programs cannot be opened here.');
+  const r=convertSpike(project);
+  if(!r.blocks.length) throw new Error('No programs were found in that file. Python programs cannot be opened here.');
+  if(running) finish('user');
+  loadProgram({blocks:{languageVersion:0,blocks:r.blocks}});
+  store.progs[progKey()]=Blockly.serialization.workspaces.save(ws); save();
+  const sk=Object.keys(r.skipped);
+  return {stacks:r.blocks.length,blocks:ws.getAllBlocks(false).filter(b=>!b.isShadow()).length,skipped:sk};
+}
+$('openSpike').onclick=()=>$('spikeFile').click();
+$('spikeFile').onchange=async()=>{
+  const file=$('spikeFile').files[0]; $('spikeFile').value=''; if(!file) return;
+  try{ const r=await importSpike(await file.arrayBuffer());
+    toast('Opened “'+file.name.replace(/\.(llsp3|llsp|sb3)$/i,'')+'”: '+r.blocks+' blocks.'+(r.skipped.length?' Skipped (not in the simulator): '+r.skipped.join(', ')+'.':'')+' Check Robot setup matches the ports it uses.'); }
+  catch(e){ toast(e&&e.message?e.message:'That file could not be opened.'); }
+};
+
 /* ---------------- Robot setup ---------------- */
 (function(){
   const opt=(sel,list,none)=>{ sel.textContent=''; if(none){ const o=document.createElement('option'); o.value=''; o.textContent='none'; sel.append(o); } list.forEach(x=>{ const o=document.createElement('option'); o.value=x[1]; o.textContent=x[0]; sel.append(o); }); };
@@ -1391,7 +1591,7 @@ function frame(ts){
 requestAnimationFrame(frame);
 
 /* small hook for testing from the console */
-window.glowbot={go(id){ setLevel(LEVELS.findIndex(l=>l.id===id)); },get ws(){return ws;},get world(){return W;},get robot(){return R;},run,setLevel,load:loadProgram,program,mk,
+window.glowbot={importSpike:buf=>importSpike(buf),go(id){ setLevel(LEVELS.findIndex(l=>l.id===id)); },get ws(){return ws;},get world(){return W;},get robot(){return R;},run,setLevel,load:loadProgram,program,mk,
   fast(maxSec){ let n=0; while(running&&n<maxSec/DT){ tick(); n++; } return {running,x:R.x,y:R.y,yaw:yaw(),arm:R.arm,missions:L.missions()}; }};
 })();
 </script>
