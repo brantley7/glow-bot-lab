@@ -431,6 +431,7 @@ let L, W, R;
 const onPad=p=>Math.hypot(R.x-p.x,R.y-p.y)<=p.r-2;
 const inside=(z,x,y)=>z.r?Math.hypot(x-z.x,y-z.y)<=z.r:(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h);
 const allGates=()=>W.gates.every(g=>g.hit);
+const usesBlock=t=>ws?ws.getAllBlocks(false).filter(b=>b.type===t&&b.isEnabled()&&!b.isShadow()).length:0;
 /* One practice challenge per robot-game mission, on the full BIOGLOW field.
    [mission, id, name, start side, points needed, the models that belong to it, task, tip] */
 const MC=[
@@ -506,6 +507,39 @@ const LEVELS=[
   build:()=>({homes:[{cx:0,cy:100,r:48.5,c:'red',col:'#C7362F',a0:-Math.PI/2,a1:0}],gates:[{x:120,y:30,r:10}]}),
   missions:()=>[{label:'Pass through the ring',done:W.gates[0].hit},{label:'Whole robot back inside the launch area',done:W.gates[0].hit&&allInHome()},{label:'No bumps',done:W.bumps===0}],
   starter:()=>[mk('my_turn',{DEG:20},{DIR:'left'}),mk('mv_move',{AMOUNT:40})]},
+ {id:'myblock',name:'My Line Block',w:200,h:100,par:16,start:{x:19.8,y:43.7,d:0,arm:90},
+  goal:'Make your own block that follows the line, then use it twice: follow the line to the first pad, stop there for a moment, then follow the line again to the last pad.',
+  hint:'In My Blocks, press “Make a Block” and name it, for example “follow line”. Use the gear on the define block to add a number input called seconds. Under define: reset timer, then “repeat until timer > seconds” with your line follower inside (if black, steering 35, else steering -35), then stop moving. Now your program is short: follow line (some seconds), wait 1 second, follow line (more seconds). Change only the numbers until it stops on each pad. That is what a function is for: write the hard part once, use it many times.',
+  build:()=>{ const pts=[]; for(let x=28;x<=184;x+=2) pts.push([x,50+14*Math.sin((x-28)/78*Math.PI)]);
+    return {lines:[{pts,w:3}],pads:[{x:101,y:44,r:12},{x:186,y:47,r:12}]}; },
+  watch:()=>{ if(!W.rested&&onPad(W.pads[0])&&R.wl===0&&R.wr===0){ W.restT=(W.restT||0)+DT; if(W.restT>=.75) W.rested=true; } else if(!W.rested) W.restT=0; },
+  missions:()=>[{label:'Stop on the first pad for a moment',done:!!W.rested},{label:'Finish on the last pad',done:!!W.rested&&onPad(W.pads[1])},
+    {label:'Use your own My Block at least twice',done:usesBlock('procedures_callnoreturn')>=2}],
+  starter:()=>[{type:'ct_forever',inputs:{DO:{block:{type:'ct_ifelse',inputs:{COND:{block:mk('sn_is_color',null,{COLOR:'black'})}}}}}}]},
+ {id:'count',name:'Line Counter',w:200,h:90,par:12,start:{x:20,y:45,d:0,arm:90},
+  goal:'Stop with the color sensor on the 4th black line. The lines move every run, so you have to count them. Use a variable as your counter.',
+  hint:'In Variables, make a variable called lines. Set lines to 0. Then “repeat until lines = 4”: wait until the sensor sees white, wait until it sees black, then change lines by 1. The white wait matters: without it, one line counts as many, because the sensor is still sitting on it. Start moving before the loop and stop moving after it. Bonus: “write lines” shows the count on the hub screen.',
+  build:()=>{ const lines=[]; let x=46+Math.round(Math.random()*12); for(let i=0;i<6;i++){ lines.push({pts:[[x,10],[x,80]],w:3}); x+=13+Math.round(Math.random()*10); } return {lines}; },
+  missions:()=>{ const p=toWorld(SENSOR.x,SENSOR.y), on=W.lines.findIndex(l=>Math.abs(l.pts[0][0]-p[0])<=2.4);
+    return [{label:'Sensor on the 4th black line',done:on===3&&sense().c==='black'},{label:'Count with a variable',done:usesBlock('math_change')+usesBlock('variables_set')>0},{label:'No bumps',done:W.bumps===0}]; },
+  starter:()=>[mk('mv_start_steer'),mk('ct_wait_until',null,null,{COND:{block:mk('sn_is_color',null,{COLOR:'black'})}}),mk('mv_stop')]},
+ {id:'stopper',name:'Stop the Forever',w:180,h:100,par:13,live:true,start:{x:19.8,y:43.7,d:0,arm:0},
+  goal:'Your line follower runs forever, so blocks under it never run. Use a second stack to stop it in the red zone, then send a message that lifts the fork to celebrate.',
+  hint:'Keep the forever follower under “when program starts”. Make a second stack: “when color is red”, then “stop other stacks” (this ends the forever loop), “stop moving”, and “broadcast done”. Make a third stack: “when I receive done”, then lift the fork. Broadcast is how two parts of a program talk to each other. “Stop and exit program” stops everything at once, so use it only when you are completely finished.',
+  build:()=>{ const pts=[]; for(let x=28;x<=150;x+=2) pts.push([x,50+18*Math.sin((x-28)/122*2*Math.PI)]);
+    return {lines:[{pts,w:3}],zones:[{x:149,y:26,w:18,h:48,color:'red',label:'STOP'}]}; },
+  missions:()=>{ const stopped=R.wl===0&&R.wr===0&&inside(W.zones[0],...toWorld(SENSOR.x,SENSOR.y));
+    return [{label:'Stop in the red zone',done:stopped},{label:'Fork lifted after stopping',done:stopped&&R.arm>=80},{label:'Send a message with broadcast',done:usesBlock('ev_receive')>0&&usesBlock('ev_broadcast')+usesBlock('ev_broadcast_wait')>0}]; },
+  starter:()=>[{type:'ct_forever',inputs:{DO:{block:{type:'ct_ifelse',inputs:{COND:{block:mk('sn_is_color',null,{COLOR:'black'})},DO:{block:mk('mv_start_steer',{STEER:35})},ELSE:{block:mk('mv_start_steer',{STEER:-35})}}}}}}]},
+ {id:'findhome',name:'Find Home',w:160,h:100,par:24,streak:3,start:{x:95,y:40,d:-28.7,arm:90},
+  goal:'The robot is out on the field and backs home with one long move. Each run it starts a little off, so sometimes it stops short. Add a check: if the color sensor is not on white, run your own “find home” block. Get the whole robot home 3 runs in a row.',
+  hint:'Inside the launch area the mat is white; outside it is green. Step 1: if the sensor is not on white, back up a little at a time until it is. Step 2: always back up about 6 cm more at the end, because the sensor is at the front corner and the back of the robot can still be outside the line. Step 3, for when the rock is in the way: set C relative position to 0, back up a few cm, and check C relative position. If it barely changed, the robot is stuck: drive forward 6 cm, gyro turn right 30, back up 10 cm, then gyro turn left 30 to face the same way again (a sidestep). Just turning and driving off in a new direction usually sends the robot into the wall above the launch area. The gyro cannot tell you that you are stuck, because a stuck robot does not turn; the motor position can. Add a timer limit so a lost robot gives up instead of wasting the match.',
+  build:()=>({ground:'green',homes:[{cx:0,cy:100,r:48.5,c:'red',col:'#C7362F',a0:-Math.PI/2,a1:0}],rocks:[{x:58.7,y:75.9,r:6}]}),
+  scatter:()=>{ const a=(Math.random()-.5)*24, s=(Math.random()-.5)*6, c=Math.cos(R.th), n=Math.sin(R.th); R.x+=a*c-s*n; R.y+=a*n+s*c; R.th+=(Math.random()-.5)*12*RAD; R.th0=R.th; },
+  streakHit:()=>allInHome(),
+  streakMsg:(hit,n)=>hit?'Home! '+n+' in a row. Run it again: the start moves every time.':'Not all the way home, so the streak is back to 0. Check the sensor, then try again.',
+  missions:()=>[{label:'Whole robot home 3 runs in a row ('+(streaks.findhome||0)+' so far)',done:(streaks.findhome||0)>=3},{label:'Use your own My Block',done:usesBlock('procedures_callnoreturn')>0}],
+  starter:()=>[mk('mv_move',{AMOUNT:83},{DIR:'back',UNIT:'cm'})]},
  ...MC.map(c=>({id:c[1],name:c[2],mission:c[0],w:236,h:114,drag:true,goalPts:c[4],own:c[5],task:c[6],
    start:c[8]||(c[3]==='L'?{x:34,y:98,d:0,arm:90}:{x:200,y:96,d:180,arm:90}),
    goal:c[6]+' ★ Do the mission. ★★ Also a clean run: no bumps and nothing else on the field moved. ★★★ Also finish with the whole robot back inside a launch area. Three-star runs post a time to the leaderboard.',
@@ -641,7 +675,7 @@ const maxScore=()=>L.missions().reduce((a,m)=>a+(m.max||0),0);
 /* ---------------- world ---------------- */
 function resetWorld(){
   const d=L.build();
-  W={t:0,timer0:0,lines:d.lines||[],zones:d.zones||[],paints:d.paints||[],rivers:d.rivers||[],pads:d.pads||[],rocks:d.rocks||[],homes:d.homes||null,mat:d.mat||null,tags:d.tags||[],docks:d.docks||null,
+  W={t:0,timer0:0,lines:d.lines||[],zones:d.zones||[],paints:d.paints||[],rivers:d.rivers||[],pads:d.pads||[],rocks:d.rocks||[],homes:d.homes||null,mat:d.mat||null,ground:d.ground||null,tags:d.tags||[],docks:d.docks||null,
      objs:(d.objs||[]).map(o=>Object.assign({sx:o.x,sy:o.y,vx:0,vy:0,car:false},o)),fix:(d.fix||[]).map(f=>Object.assign({done:false,stage:0,anim:0},f)),
      gates:(d.gates||[]).map(g=>Object.assign({hit:false},g)),bumps:0,wasBump:false,bumpFlash:0,clock:L.clock||0,display:'',trail:[],vars:{},lifted:false,parts:[],
      tokens:6,launched:false,katyOut:false,antPeak:0,id:{}};
@@ -681,7 +715,10 @@ function sampleAt(x,y){
     else if(W.rivers.some(r=>polyDist(x,y,r.pts)<r.w/2)) bg={c:'blue',r:20};
     else if(z) bg={c:z.color,r:REFL[z.color]};
     else bg={c:'green',r:30};
-  } else if(z) bg={c:z.color,r:REFL[z.color]};
+  } else { const h=W.ground&&W.homes&&W.homes.find(h=>Math.hypot(x-h.cx,y-h.cy)<=h.r);
+    if(h){ if(Math.hypot(x-h.cx,y-h.cy)>=h.r-1.4) bg={c:h.c,r:REFL[h.c]}; }
+    else if(z) bg={c:z.color,r:REFL[z.color]};
+    else if(W.ground) bg={c:W.ground,r:REFL[W.ground]}; }
   if(d<=0) return {c:'black',r:6};
   if(halo) return d<1.2?{c:'white',r:92}:bg;
   if(d<0.9){ const r=6+d/0.9*(bg.r-6); return {c:r<bg.r*.55?'black':bg.c,r:Math.round(r)}; }
@@ -734,12 +771,12 @@ function armProblem(kind){ const pt='motor '+CFG.fork; W.armStrained=true;
   else if(kind==='up') problem('arm-up','The arm ('+pt+') reached the top and kept pushing up. Ask it to turn only as far as it can go, about 90°.');
   else problem('arm-on:'+W.hitBy,'The arm ('+pt+') pressed down on '+thingName(W.hitBy)+' and could not lower any further.'); }
 function physics(dt){
-  R.degL+=R.wl*dt; R.degR+=R.wr*dt; if(W.mot) for(const q in W.mot) W.mot[q].pos+=W.mot[q].rate*dt;
+  const dL0=R.degL, dR0=R.degR; R.degL+=R.wl*dt; R.degR+=R.wr*dt; if(W.mot) for(const q in W.mot) W.mot[q].pos+=W.mot[q].rate*dt;
   if(R.wl||R.wr){
     const px=R.x,py=R.y,pt=R.th;
     const vl=R.wl/360*WHEEL_CM*R.slipL, vr=R.wr/360*WHEEL_CM*R.slipR, v=(vl+vr)/2, om=(vl-vr)/TRACK;
     R.th+=om*dt; R.x+=v*Math.cos(R.th)*dt; R.y+=v*Math.sin(R.th)*dt;
-    if(blocked()){ R.x=px;R.y=py;R.th=pt; W.pressT=W.t; if(!W.wasBump&&!(L.own&&L.own.indexOf(W.hitBy)>=0)&&!(W.hitBy==='wall'&&W.homes&&inHome(R.x,R.y))){ W.bumps++; W.bumpFlash=.35; W.bumpWhat=W.hitBy; problem('hit:'+(W.hitBy==='wall'?wallName():W.hitBy),'Ran into '+thingName(W.hitBy)+'.'); } W.wasBump=true; } else W.wasBump=false;
+    if(blocked()){ R.x=px;R.y=py;R.th=pt; R.degL=dL0; R.degR=dR0; W.pressT=W.t; /* pinned: the drive motors stall, so their position stops counting */ if(!W.wasBump&&!(L.own&&L.own.indexOf(W.hitBy)>=0)&&!(W.hitBy==='wall'&&W.homes&&inHome(R.x,R.y))){ W.bumps++; W.bumpFlash=.35; W.bumpWhat=W.hitBy; problem('hit:'+(W.hitBy==='wall'?wallName():W.hitBy),'Ran into '+thingName(W.hitBy)+'.'); } W.wasBump=true; } else W.wasBump=false;
     const tr=W.trail, last=tr[tr.length-1];
     if(!last||Math.hypot(last[0]-R.x,last[1]-R.y)>1.5){ tr.push([R.x,R.y]); if(tr.length>1500) tr.shift(); }
   }
@@ -952,6 +989,7 @@ function run(){
   if(!tops.length&&!hats.length){ toast('Add a “when program starts” block from Events first.'); return; }
   let lost=false;
   if(L.match&&W.clock>0){ if(W.launched&&!inHome(R.x,R.y)&&W.tokens>0){ W.tokens--; lost=true; } placeRobot(); } else resetWorld();
+  if(L.scatter) L.scatter();
   if(L.sloppy&&!$('jig').checked){ R.x+=(Math.random()-.5)*3; R.y+=(Math.random()-.5)*3; R.th+=(Math.random()-.5)*20*RAD; R.th0=R.th; }
   W.launched=true; hideBanner(); if(lost) toast('Relaunched from outside home: one precision token lost.');
   if($('wobble').checked){ R.slipL=1+(Math.random()-.5)*.05; R.slipR=1+(Math.random()-.5)*.05; }
@@ -987,6 +1025,7 @@ function tick(){
     catch(e){ if(e===STOP){ curThread=null; finish('stop'); return; } th.done=true; if(e!==STOP_THIS) console.error(e); } }
   curThread=null;
   physics(DT); W.t+=DT;
+  if(L.watch) L.watch();
   if(L.match){ W.clock-=DT; if(W.clock<=0){ W.clock=0; finish('time'); return; } }
   if(L.live&&L.missions().every(m=>m.done)){ finish('end'); return; }
   if(threads.every(t=>t.done)&&!(W.hats||[]).some(h=>h.b.type!=='ev_receive')) finish('end');
@@ -1015,8 +1054,8 @@ function finish(why){
     banner(msg,'Next challenge',()=>setLevel(i+1),stars===3);
     return;
   }
-  if(L.streak&&why!=='user'){ const hit=onPad(W.pads[0]); streaks[L.id]=hit?(streaks[L.id]||0)+1:0; lastMissions='';
-    if(streaks[L.id]<L.streak){ toast(hit?'On the pad! '+streaks[L.id]+' in a row. Run it again.':'Missed the pad, so the streak is back to 0. Try the launch jig.'); return; } }
+  if(L.streak&&why!=='user'){ const hit=L.streakHit?L.streakHit():onPad(W.pads[0]); streaks[L.id]=hit?(streaks[L.id]||0)+1:0; lastMissions='';
+    if(streaks[L.id]<L.streak){ (L.streakMsg?toast(L.streakMsg(hit,streaks[L.id])):toast(hit?'On the pad! '+streaks[L.id]+' in a row. Run it again.':'Missed the pad, so the streak is back to 0. Try the launch jig.')); return; } }
   const ms=L.missions();
   if(ms.every(m=>m.done)){
     const n=ws.getAllBlocks(false).filter(b=>!b.isShadow()&&b.isEnabled()).length, stars=n<=L.par?3:n<=L.par+2?2:1;
@@ -1066,7 +1105,7 @@ function draw(now){
   const k=pw/L.w, c=cx, pulse=.5+.5*Math.sin(now/350), M=!!W.mat;
   cam.z=zoom?2.2:1; cam.x=zoom?clamp(R.x-L.w/cam.z/2,0,L.w-L.w/cam.z):0; cam.y=zoom?clamp(R.y-L.h/cam.z/2,0,L.h-L.h/cam.z):0;
   const K=k*cam.z; c.setTransform(K,0,0,K,-cam.x*K,-cam.y*K);
-  if(M) c.drawImage(matArt(),0,0,L.w,L.h); else { c.fillStyle='#F3F7EC'; c.fillRect(0,0,L.w,L.h); }
+  if(M) c.drawImage(matArt(),0,0,L.w,L.h); else { c.fillStyle=W.ground?'#3F8A4B':'#F3F7EC'; c.fillRect(0,0,L.w,L.h); }
   c.strokeStyle=M?'rgba(255,255,255,.1)':'rgba(18,48,43,.08)'; c.lineWidth=.25; c.beginPath();
   for(let x=10;x<L.w;x+=10){ c.moveTo(x,0); c.lineTo(x,L.h); } for(let y=10;y<L.h;y+=10){ c.moveTo(0,y); c.lineTo(L.w,y); } c.stroke();
   if(W.homes) for(const h of W.homes){
@@ -1252,6 +1291,8 @@ ws.registerToolboxCategoryCallback('MYBLOCKS',w=>{
   Blockly.Procedures.allProcedures(w)[0].forEach(pr=>list.push({kind:'block',type:'procedures_callnoreturn',extraState:{name:pr[0],params:pr[1]}}));
   list.push({kind:'label',text:'Ready-made'},T('my_turn'),T('my_fork_up'),T('my_fork_down'));
   return list; });
+ws.addChangeListener(e=>{ if(e.isUiEvent) return;
+  for(const b of ws.getBlocksByType('procedures_callnoreturn',false)) for(const inp of b.inputList){ const c=inp.connection; if(c&&/^ARG\d+$/.test(inp.name)&&!c.targetConnection) c.setShadowState({type:'math_number',fields:{NUM:0}}); } });
 ws.addChangeListener(e=>{ if(e.isUiEvent||loading) return; store.progs[progKey()]=Blockly.serialization.workspaces.save(ws); save(); });
 const reTheme=()=>ws.setTheme(theme(isDark()));
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',reTheme);
