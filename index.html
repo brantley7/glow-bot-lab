@@ -239,10 +239,11 @@ details ul{padding-left:18px}
         <div class="tblwrap"><table id="lb"><thead><tr><th>#</th><th>Coder</th><th id="lbC1">Stars</th><th id="lbC2">Best ★★★ time</th></tr></thead><tbody id="lbBody"></tbody></table></div>
         <h3>Team programs for this challenge</h3>
         <ul id="lib"></ul>
-        <div class="who"><button class="btn sm" id="shareProg" type="button" hidden>Share my program</button><button class="btn sm" id="copyProg" type="button">Copy program text</button><button class="btn sm" id="pasteProg" type="button">Paste program text</button></div>
-        <h3>SPIKE app files</h3>
-        <div class="who"><button class="btn sm" id="publishSpike" type="button" hidden>Publish to team Drive</button><button class="btn sm" id="saveSpike" type="button">Save as SPIKE file</button><button class="btn sm" id="openSpike" type="button">Open a SPIKE file</button><input type="file" id="spikeFile" accept=".llsp3,.llsp,.sb3" hidden></div>
-        <p class="note">“Publish to team Drive” puts this program in the team’s Google Drive folder, named with your name and the challenge, ready to open in the SPIKE app at practice. “Save as SPIKE file” downloads it to this device. “Open a SPIKE file” loads a program saved from the SPIKE app into this challenge.</p>
+        <div class="who"><button class="btn go sm" id="shareProg" type="button" hidden>Share with team</button></div>
+        <p class="note">“Share with team” adds your program to the team list above for this challenge, and saves it as a SPIKE app file in the team’s Google Drive folder, in a folder with your name, ready to open on the real robot at practice. Choose your name under “Coding as” first.</p>
+        <h3>More ways to move programs</h3>
+        <div class="who"><button class="btn sm" id="saveSpike" type="button">Save as SPIKE file</button><button class="btn sm" id="openSpike" type="button">Open a SPIKE file</button><input type="file" id="spikeFile" accept=".llsp3,.llsp,.sb3" hidden><button class="btn sm" id="copyProg" type="button">Copy program text</button><button class="btn sm" id="pasteProg" type="button">Paste program text</button></div>
+        <p class="note">“Save as SPIKE file” downloads the program to this device. “Open a SPIKE file” loads a program saved from the SPIKE app into this challenge.</p>
       </div>
     </section>
     <section class="code"><div id="blockly"></div><div class="tip">Drag blocks under “when program starts”</div></section>
@@ -1314,7 +1315,6 @@ function teamNote(){
     :teamState==='offline'?'The team board cannot be reached right now. Your scores are kept on this device and sent when it reconnects.'
     :'Scores are saved on this device only.';
   $('shareProg').hidden=!(back&&canWrite);
-  $('publishSpike').hidden=!(back&&back.kind==='sheet'&&canWrite);
 }
 function pushMe(){
   renderBoard(); const k=store.me; if(!back||!canWrite||!k||k==='guest') return;
@@ -1385,7 +1385,14 @@ $('shareProg').onclick=()=>{
   if(!store.me||store.me==='guest'){ toast('Choose your name under “Coding as” first.'); return; }
   const json=JSON.stringify(Blockly.serialization.workspaces.save(ws)); if(json.length>back.maxJson){ toast('That program is too big to share. Use “Copy program text” instead.'); return; }
   const body={player:P().name,slug:store.me,level:L.id,json,blocks:ws.getAllBlocks(false).filter(b=>!b.isShadow()).length,t:Date.now()};
-  writeChain=writeChain.then(()=>back.saveProgram(store.me+'_'+L.id,body)).then(()=>{ toast('Shared with the team.'); renderLib(); },()=>toast('Could not share right now. Try again in a minute.'));
+  $('shareProg').disabled=true; toast('Sharing…');
+  writeChain=writeChain.then(()=>back.saveProgram(store.me+'_'+L.id,body)).then(async()=>{
+    renderLib();
+    if(back.kind!=='sheet'){ toast('Shared with the team.'); return; }
+    try{ const r=await publishDrive();
+      toast('Shared! It’s in the team list for this challenge and saved as a SPIKE app file in the team Drive folder “'+(r.folder||'Glow Bot Lab programs')+'”.'+(r.notes.length?' Changed for SPIKE: '+r.notes.join('; ')+'.':'')); }
+    catch(e){ toast('Shared in the team list, but the SPIKE file could not be saved to Drive: '+(e&&e.message||'try again')+'.'); }
+  },()=>toast('Could not share right now. Try again in a minute.')).finally(()=>{ $('shareProg').disabled=false; });
 };
 $('copyProg').onclick=()=>{
   const t=JSON.stringify(Blockly.serialization.workspaces.save(ws)), manual=()=>ask('Select all of this text and copy it:',t,()=>{});
@@ -1799,16 +1806,14 @@ $('saveSpike').onclick=async()=>{
     toast('Saved “'+file+'”. Open it in the SPIKE app with File → Open.'+(r.notes.length?' Changed for SPIKE: '+r.notes.join('; ')+'.':''));
   }catch(e){ toast(e&&e.message?e.message:'That program could not be saved.'); }
 };
-$('publishSpike').onclick=async()=>{
-  if(!back||back.kind!=='sheet'){ toast('Publishing needs the team board connected to the Google Sheet.'); return; }
-  if(!store.me||store.me==='guest'){ toast('Choose your name under “Coding as” first.'); return; }
-  try{ const name=spikeName(), r=await spikeFileBytes(name);
-    $('publishSpike').disabled=true;
-    const j=await back.publishFile({type:'file',name:name+'.llsp3',data:b64(r.bytes),player:P().name,slug:store.me,level:L.id});
-    toast('Published “'+name+'” to the team Drive folder'+(j&&j.folder?' “'+j.folder+'”':'')+'.'+(r.notes.length?' Changed for SPIKE: '+r.notes.join('; ')+'.':''));
-  }catch(e){ toast(/Unknown request|cannot be saved|DriveApp|permission/i.test(String(e&&e.message))?'The team Drive folder is not set up yet. Update the scoreboard script (see the setup notes).':'Could not publish right now: '+(e&&e.message||'try again')); }
-  finally{ $('publishSpike').disabled=false; }
-};
+/* Save the current program as a SPIKE file in the team Drive folder (part of “Share with team”). */
+async function publishDrive(){
+  const name=spikeName(), r=await spikeFileBytes(name);
+  let j;
+  try{ j=await back.publishFile({type:'file',name:name+'.llsp3',data:b64(r.bytes),player:P().name,slug:store.me,level:L.id}); }
+  catch(e){ throw new Error(/Unknown request|DriveApp|permission/i.test(String(e&&e.message))?'the team Drive folder is not set up yet':(e&&e.message||'try again')); }
+  return {name,notes:r.notes,folder:j&&j.folder};
+}
 
 /* ---------------- Robot setup ---------------- */
 (function(){
@@ -1835,7 +1840,7 @@ function frame(ts){
 requestAnimationFrame(frame);
 
 /* small hook for testing from the console */
-window.glowbot={importSpike:buf=>importSpike(buf),exportSpike:n=>spikeFileBytes(n),go(id){ setLevel(LEVELS.findIndex(l=>l.id===id)); },get ws(){return ws;},get world(){return W;},get robot(){return R;},run,setLevel,load:loadProgram,program,mk,
+window.glowbot={publishDrive:()=>publishDrive(),importSpike:buf=>importSpike(buf),exportSpike:n=>spikeFileBytes(n),go(id){ setLevel(LEVELS.findIndex(l=>l.id===id)); },get ws(){return ws;},get world(){return W;},get robot(){return R;},run,setLevel,load:loadProgram,program,mk,
   fast(maxSec){ let n=0; while(running&&n<maxSec/DT){ tick(); n++; } return {running,x:R.x,y:R.y,yaw:yaw(),arm:R.arm,missions:L.missions()}; }};
 })();
 </script>
