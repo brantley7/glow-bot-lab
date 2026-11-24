@@ -472,9 +472,9 @@ const LEVELS=[
   build:()=>({pads:[{x:142,y:45,r:9}],rocks:[{x:60,y:47,r:7},{x:104,y:43,r:7}],gates:[{x:60,y:20,r:10},{x:104,y:70,r:10}]}),
   missions:()=>[{label:'Pass ring 1 (above the first rock)',done:W.gates[0].hit},{label:'Pass ring 2 (below the second rock)',done:W.gates[1].hit},{label:'Stop on the pad',done:onPad(W.pads[0])},{label:'No bumps',done:W.bumps===0}],
   starter:()=>[mk('mv_steer',{STEER:-30,AMOUNT:20})]},
- {id:'fork',name:'Fork Lift',w:160,h:90,par:5,start:{x:20,y:45,d:0,arm:0},
-  goal:'Slide the fork under the firefly crate, lift it, and set it down in the blue nest.',
-  hint:'The fork starts down. Drive until the prongs are under the crate, run the fork motor 90 degrees to lift, drive to the nest, then run it 90 degrees the other way to set it down.',
+ {id:'fork',name:'Fork Lift',w:160,h:90,par:8,armRandom:[30,90],start:{x:20,y:45,d:0,arm:0},
+  goal:'Slide the fork under the firefly crate, lift it, and set it down in the blue nest. Watch out: the fork is left at a different height every run, so first put it in a good starting place.',
+  hint:'First get the fork to its starting place, all the way down, no matter where it was left: set the fork motor speed to 30%, run it down (clockwise) for 120 degrees, more than it needs, so it always ends on the mat, then set its relative position to 0. A slow, short push against the mat is fine. (The ready-made “fork all the way down” block in My Blocks does the same.) Then drive until the prongs are under the crate, run the fork motor 90 degrees to lift, drive to the nest, and run it 90 degrees the other way to set it down.',
   build:()=>({zones:[{x:126,y:45,r:12,color:'blue',label:'NEST'}],objs:[{type:'pod',lift:true,x:70,y:45,r:3}]}),
   missions:()=>[{label:'Lift the crate',done:W.lifted},{label:'Crate set down in the nest',done:!W.objs[0].car&&Math.hypot(W.objs[0].x-126,W.objs[0].y-45)<=10}],
   starter:()=>[mk('mv_move',{AMOUNT:10}),mk('mt_run_for',{AMOUNT:90})]},
@@ -546,11 +546,11 @@ const LEVELS=[
   streakMsg:(hit,n)=>hit?'Home! '+n+' in a row. Run it again: the start moves every time.':'Not all the way home, so the streak is back to 0. Check the sensor, then try again.',
   missions:()=>[{label:'Whole robot home 3 runs in a row ('+(streaks.findhome||0)+' so far)',done:(streaks.findhome||0)>=3},{label:'Use your own My Block',done:usesBlock('procedures_callnoreturn')>0}],
   starter:()=>[mk('mv_move',{AMOUNT:83},{DIR:'back',UNIT:'cm'})]},
- {id:'ready',name:'Ready Position',w:160,h:100,par:7,jig:'Start from the corner',streak:3,start:{x:9.6,y:91.9,d:0,arm:0},
+ {id:'ready',name:'Ready Position',w:160,h:100,par:7,armRandom:[30,90],jig:'Start from the corner',streak:3,start:{x:9.6,y:91.9,d:0,arm:0},
   goal:'Bring the firefly crate home 3 runs in a row. The program almost works, but two things change every run, just like at practice: the robot is set down by eye, and the fork was left at a different height by whoever used it last.',
   hint:'1) Start from the corner: tick “Start from the corner” by the Run button. On the real table, push the back of the robot against the side wall and slide it along until its side touches the front wall, so it is snug in the corner every time. 2) Put the arm in its ready position as the very first thing your program does. Slowly lower it until it stops: “set E speed to 30%”, then “E run clockwise for 120 degrees” (more than it needs, so it always reaches the mat), then “E set relative position to 0” so “0” now means “fork on the mat”. A slow, short push to find the stop is fine; a fast or long push strains the motor. The ready-made “fork all the way down” block in My Blocks does the same thing. 3) Then drive, lift, and come home.',
   build:()=>({homes:[{cx:0,cy:100,r:48.5,c:'red',col:'#C7362F',a0:-Math.PI/2,a1:0}],objs:[{id:'crate',type:'pod',lift:true,x:80,y:92,r:3}]}),
-  scatter:()=>{ R.arm=30+Math.random()*60; if(!$('jig').checked){ R.x+=1+Math.random()*9; R.y-=1+Math.random()*9; R.th+=(Math.random()-.5)*14*RAD; R.th0=R.th; } },
+  scatter:()=>{ if(!$('jig').checked){ R.x+=1+Math.random()*9; R.y-=1+Math.random()*9; R.th+=(Math.random()-.5)*14*RAD; R.th0=R.th; } },
   streakHit:()=>!!(W.id.crate&&W.id.crate.car)&&allInHome(),
   streakMsg:(hit,n)=>hit?'Crate home! '+n+' in a row. Run it again.':'No crate at home this time, so the streak is back to 0. Did it start in the same place, with the fork in the same spot?',
   missions:()=>[{label:'Start from the corner (tick the box by Run)',done:$('jig').checked},{label:'Crate brought home 3 runs in a row ('+(streaks.ready||0)+' so far)',done:(streaks.ready||0)>=3}],
@@ -697,7 +697,8 @@ function resetWorld(){
   for(const o of W.objs) if(o.id) W.id[o.id]=o;
   for(const f of W.fix) if(f.id) W.id[f.id]=f;
   W.fixed=W.rocks.map(r=>({x:r.x,y:r.y,r:r.r,own:r.id})).concat(W.fix.filter(f=>f.br).map(f=>({x:f.bx,y:f.by,r:f.br,own:f.id})));
-  placeRobot(); hideBanner(); renderAlerts();
+  placeRobot(); if(L.armRandom) R.arm=L.armRandom[0]+Math.random()*(L.armRandom[1]-L.armRandom[0]); /* the fork was left wherever the last person put it */
+  hideBanner(); renderAlerts();
 }
 function homeOK(x,y,d){
   if(!W||!W.homes) return false;
