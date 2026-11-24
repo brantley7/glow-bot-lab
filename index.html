@@ -175,7 +175,7 @@ details ul{padding-left:18px}
         <span class="hubbtns" aria-label="Hub buttons"><button id="hubL" class="btn sm" type="button">◀ Hub</button><button id="hubR" class="btn sm" type="button">Hub ▶</button></span>
         <button id="docks" class="btn" type="button" hidden>Docks</button>
         <label class="tog" for="wobble"><input type="checkbox" id="wobble"> Real-world wobble</label>
-        <label class="tog" for="jig" id="jigL" hidden><input type="checkbox" id="jig"> Launch jig</label>
+        <label class="tog" for="jig" id="jigL" hidden><input type="checkbox" id="jig"> <span id="jigT">Launch jig</span></label>
       </div>
       <ul id="alerts" class="alerts" hidden aria-live="polite"></ul>
       <div class="hud" id="hud" aria-live="off">
@@ -546,6 +546,15 @@ const LEVELS=[
   streakMsg:(hit,n)=>hit?'Home! '+n+' in a row. Run it again: the start moves every time.':'Not all the way home, so the streak is back to 0. Check the sensor, then try again.',
   missions:()=>[{label:'Whole robot home 3 runs in a row ('+(streaks.findhome||0)+' so far)',done:(streaks.findhome||0)>=3},{label:'Use your own My Block',done:usesBlock('procedures_callnoreturn')>0}],
   starter:()=>[mk('mv_move',{AMOUNT:83},{DIR:'back',UNIT:'cm'})]},
+ {id:'ready',name:'Ready Position',w:160,h:100,par:7,jig:'Start from the corner',streak:3,start:{x:9.6,y:91.9,d:0,arm:0},
+  goal:'Bring the firefly crate home 3 runs in a row. The program almost works, but two things change every run, just like at practice: the robot is set down by eye, and the fork was left at a different height by whoever used it last.',
+  hint:'1) Start from the corner: tick “Start from the corner” by the Run button. On the real table, push the back of the robot against the side wall and slide it along until its side touches the front wall, so it is snug in the corner every time. 2) Put the arm in its ready position as the very first thing your program does. Slowly lower it until it stops: “set E speed to 30%”, then “E run clockwise for 120 degrees” (more than it needs, so it always reaches the mat), then “E set relative position to 0” so “0” now means “fork on the mat”. A slow, short push to find the stop is fine; a fast or long push strains the motor. The ready-made “fork all the way down” block in My Blocks does the same thing. 3) Then drive, lift, and come home.',
+  build:()=>({homes:[{cx:0,cy:100,r:48.5,c:'red',col:'#C7362F',a0:-Math.PI/2,a1:0}],objs:[{id:'crate',type:'pod',lift:true,x:80,y:92,r:3}]}),
+  scatter:()=>{ R.arm=30+Math.random()*60; if(!$('jig').checked){ R.x+=1+Math.random()*9; R.y-=1+Math.random()*9; R.th+=(Math.random()-.5)*14*RAD; R.th0=R.th; } },
+  streakHit:()=>!!(W.id.crate&&W.id.crate.car)&&allInHome(),
+  streakMsg:(hit,n)=>hit?'Crate home! '+n+' in a row. Run it again.':'No crate at home this time, so the streak is back to 0. Did it start in the same place, with the fork in the same spot?',
+  missions:()=>[{label:'Start from the corner (tick the box by Run)',done:$('jig').checked},{label:'Crate brought home 3 runs in a row ('+(streaks.ready||0)+' so far)',done:(streaks.ready||0)>=3}],
+  starter:()=>[mk('mv_move',{AMOUNT:55},{DIR:'fwd',UNIT:'cm'}),mk('mt_run_for',{AMOUNT:90}),mk('mv_move',{AMOUNT:55},{DIR:'back',UNIT:'cm'})]},
  ...MC.map(c=>({id:c[1],name:c[2],mission:c[0],w:236,h:114,drag:true,goalPts:c[4],own:c[5],task:c[6],
    start:c[8]||(c[3]==='L'?{x:34,y:98,d:0,arm:90}:{x:200,y:96,d:180,arm:90}),
    goal:c[6]+' ★ Do the mission. ★★ Also a clean run: no bumps and nothing else on the field moved. ★★★ Also finish with the whole robot back inside a launch area. Three-star runs post a time to the leaderboard.',
@@ -790,7 +799,7 @@ function physics(dt){
     const a0=R.arm; R.arm=clamp(a0+R.armRate*dt,0,90);
     if(R.arm<a0&&blocked()) R.arm=a0;
     const strain=(R.arm<=0&&R.armRate<0)?'down':(R.arm>=90&&R.armRate>0)?'up':(R.armRate<0&&R.arm===a0&&a0>0)?'object':null;
-    if(strain){ W.strainT=(W.strainT||0)+dt; if(W.strainT>.2&&!W.strainOn){ W.strainOn=true; armProblem(strain); } } else { W.strainT=0; W.strainOn=false; }
+    if(strain){ W.strainT=(W.strainT||0)+dt; if(W.strainT>(Math.abs(R.armRate)<=ARM_DPS*.3+1e-6?.6:.2)&&!W.strainOn){ W.strainOn=true; armProblem(strain); } } else { W.strainT=0; W.strainOn=false; }
     if(a0<22&&R.arm>=22){
       { let best=null, bd=1e9; for(const o of W.objs) if(o.lift&&!o.car&&!o.held&&!o.ghost&&inFork(o.x,o.y)){ const d=Math.abs(toLocal(o.x,o.y)[1]); if(d<bd){ bd=d; best=o; } }
         if(best){ const l=toLocal(best.x,best.y); best.car=true; best.cl=[l[0]-9.5,l[1]]; best.vx=best.vy=0; W.lifted=true; } }
@@ -1236,7 +1245,7 @@ function setLevel(i){
   cv.style.aspectRatio=L.w+' / '+L.h; cv.classList.toggle('drag',!!L.drag);
   $('lname').textContent=L.mission||L.match?lvLabel(L):(i+1)+'. '+L.name; $('lgoal').textContent=L.goal; $('lhint').textContent=L.hint; $('hintbox').open=false;
   $('cScore').hidden=$('cClock').hidden=!L.match; $('docks').hidden=!(L.match||L.mission>=13); docksLabel();
-  resetWorld(); lastMissions=''; renderLevels(); streaks={}; renderLib(); $('jigL').hidden=!L.sloppy; lbFollow();
+  resetWorld(); lastMissions=''; renderLevels(); streaks={}; renderLib(); $('jigL').hidden=!(L.sloppy||L.jig); $('jigT').textContent=L.jig||'Launch jig'; $('jig').checked=false; lbFollow();
   if(ws) loadProgram(store.progs[progKey()]||store.progs[L.id]||program(L.starter()));
 }
 $('run').onclick=run;

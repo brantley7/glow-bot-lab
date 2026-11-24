@@ -43,7 +43,7 @@ table{border-collapse:collapse;font-size:.95em} td,th{border:1px solid var(--lin
 @media print{
   @page{size:letter portrait;margin:.35in}
   :root,:root:not([data-theme="light"]),:root[data-theme="dark"]{--bg:#fff;--paper:#fff;--ink:#000;--muted:#333;--line:#999;color-scheme:light}
-  body{font-size:8.3pt;line-height:1.25;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{font-size:8.1pt;line-height:1.24;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .bar{display:none}
   .sheet{padding:0;margin:0;max-width:none;border-radius:0}
   .cols{columns:3;column-gap:12px}
@@ -65,7 +65,6 @@ table{border-collapse:collapse;font-size:.95em} td,th{border:1px solid var(--lin
 <b>Wheels</b><span>ports C + D</span>
 <b>Fork arm</b><span>port E · 90° from down to all the way up</span>
 <b>Color sensor</b><span>front right corner, looking down (port F in the simulator: check yours)</span>
-<b>Size</b><span>about 19 × 16 cm</span>
 </div></section>
 
 <section><h2><i style="--c:var(--mv)"></i>Driving</h2>
@@ -152,10 +151,11 @@ then <span class="k mv">move back 6 cm more</span>: the sensor is at the front</
 
 <section><h2><i style="--c:var(--go)"></i>Match Day</h2>
 <ul>
-<li><b>Same start every time:</b> back against the wall, line up on a mark, hands off, then press start.</li>
+<li><b>Same start every time:</b> snug in the corner (back on one wall, side on the other), hands off, then press start.</li>
+<li><b>Arm ready first:</b> start every program by lowering the fork slowly until it stops (<span class="k mt">E speed 30%</span> <span class="k mt">E run ↻ 120°</span>), then <span class="k mt">E set relative position to 0</span>.</li>
 <li><b>Push slowly:</b> 25 % speed or less when pushing a model.</li>
 <li><b>Get home:</b> drive the route backward, aim for the middle of the launch area, then back up a little extra.</li>
-<li><b>Fully home</b> (robot and everything it's touching) = free pickup.</li>
+<li><b>Fully home</b> = free pickup.</li>
 <li><b>Grabbing it outside home</b> costs a precision token:</li>
 </ul>
 <table><tr><th>Tokens left</th><td>6</td><td>5</td><td>4</td><td>3</td><td>2</td><td>1</td><td>0</td></tr><tr><th>Points</th><td>50</td><td>50</td><td>35</td><td>25</td><td>15</td><td>10</td><td>0</td></tr></table>
@@ -164,9 +164,8 @@ then <span class="k mv">move back 6 cm more</span>: the sensor is at the front</
 
 <section><h2><i style="--c:var(--stop,#C7362F)"></i>When it doesn't work</h2>
 <ul>
-<li>Run it slowly and watch where it first goes wrong.</li>
-<li>Change one number at a time.</li>
-<li>Check the ports and that the battery is charged.</li>
+<li>Run it slowly; watch where it first goes wrong. Change one number at a time.</li>
+<li>Check the ports and the battery.</li>
 <li>Stuck in a forever loop? Use a second stack or <span class="k ct">repeat until</span>.</li>
 <li>Works once but not always? Fix the start before the program.</li>
 </ul></section>
