@@ -1309,7 +1309,8 @@ ws.registerToolboxCategoryCallback('MYBLOCKS',w=>{
   list.push({kind:'label',text:'Ready-made'},T('my_turn'),T('my_fork_up'),T('my_fork_down'));
   return list; });
 ws.addChangeListener(e=>{ if(e.isUiEvent) return;
-  for(const b of ws.getBlocksByType('procedures_callnoreturn',false)) for(const inp of b.inputList){ const c=inp.connection; if(c&&/^ARG\d+$/.test(inp.name)&&!c.targetConnection) c.setShadowState({type:'math_number',fields:{NUM:0}}); } });
+  /* Blocks from the Variables and My Blocks menus (set variable to, a My Block's inputs) arrive with empty slots: give each a number box to type into. */
+  for(const b of ws.getAllBlocks(false)) if(!b.isShadow()&&!b.isInFlyout) for(const inp of b.inputList){ const c=inp.connection; if(c&&inp.type===Blockly.inputs.inputTypes.VALUE&&!c.targetConnection&&!(c.getCheck()||[]).includes('Boolean')&&(b.type==='variables_set'||/^ARG\d+$/.test(inp.name))) c.setShadowState({type:'math_number',fields:{NUM:0}}); } });
 ws.addChangeListener(e=>{ if(e.isUiEvent||loading) return; store.progs[progKey()]=Blockly.serialization.workspaces.save(ws); save(); });
 const reTheme=()=>ws.setTheme(theme(isDark()));
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',reTheme);
