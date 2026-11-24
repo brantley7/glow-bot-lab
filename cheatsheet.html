@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glow Bot Cheat Sheet</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@600;700;800&display=swap">
+<style>
+:root{
+  --bg:#EAF2EE; --paper:#FFFFFF; --ink:#12302B; --muted:#52706A; --line:#CBDAD3; --go:#178A4C;
+  --mt:#0A84E0; --mv:#E0399F; --ev:#C99700; --ct:#E08A00; --sn:#17A9D1; --op:#12A150; --va:#F0802B; --my:#F0525A; --hub:#8E5CF0;
+  --display:"Fredoka","Trebuchet MS",system-ui,sans-serif; --body:"Nunito","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0C1917; --paper:#132522; --ink:#E7F3EE; --muted:#93AEA6; --line:#27433C; --go:#2FB56C; color-scheme:dark } }
+:root[data-theme="dark"]{ --bg:#0C1917; --paper:#132522; --ink:#E7F3EE; --muted:#93AEA6; --line:#27433C; --go:#2FB56C; color-scheme:dark }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:600 14px/1.35 var(--body)}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;max-width:1100px;margin:0 auto;padding:12px 16px}
+.bar a,.bar button{font:800 15px var(--body);border-radius:10px;padding:9px 14px;border:2px solid var(--line);background:var(--paper);color:var(--ink);text-decoration:none;cursor:pointer}
+.bar button{background:var(--go);border-color:var(--go);color:#fff}
+.sheet{max-width:1100px;margin:0 auto 24px;padding:18px 20px;background:var(--paper);border-radius:14px}
+header{display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap;border-bottom:3px solid var(--ink);padding-bottom:6px;margin-bottom:10px}
+h1{font:600 26px var(--display);margin:0}
+header p{margin:0;color:var(--muted);font-size:13px}
+.cols{columns:3 300px;column-gap:18px}
+section{break-inside:avoid;margin:0 0 10px}
+h2{font:600 15px var(--display);margin:0 0 3px;display:flex;align-items:center;gap:6px}
+h2 i{display:inline-block;width:11px;height:11px;border-radius:3px;background:var(--c,var(--ink))}
+ul{margin:0;padding-left:15px} li{margin:1px 0}
+p{margin:2px 0}
+b{font-weight:800}
+.k{display:inline-block;border-radius:6px;padding:0 6px;color:#fff;font-weight:800;font-size:.92em;line-height:1.5;background:var(--c);white-space:nowrap}
+.mt{--c:var(--mt)} .mv{--c:var(--mv)} .ev{--c:var(--ev)} .ct{--c:var(--ct)} .sn{--c:var(--sn)} .op{--c:var(--op)} .va{--c:var(--va)} .my{--c:var(--my)} .hb{--c:var(--hub)}
+.recipe{border:2px solid var(--line);border-radius:10px;padding:5px 8px;margin:4px 0}
+.recipe .k{margin:1px 0}
+.recipe .in{padding-left:14px;border-left:3px solid var(--ct);margin:2px 0 2px 4px}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:1px 8px}
+.facts b{white-space:nowrap}
+table{border-collapse:collapse;font-size:.95em} td,th{border:1px solid var(--line);padding:1px 5px;text-align:center}
+.tip{color:var(--muted);font-size:.93em}
+@media print{
+  @page{size:letter portrait;margin:.35in}
+  :root,:root:not([data-theme="light"]),:root[data-theme="dark"]{--bg:#fff;--paper:#fff;--ink:#000;--muted:#333;--line:#999;color-scheme:light}
+  body{font-size:8.3pt;line-height:1.25;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .bar{display:none}
+  .sheet{padding:0;margin:0;max-width:none;border-radius:0}
+  .cols{columns:3;column-gap:12px}
+  h1{font-size:17pt} h2{font-size:10pt} section{margin-bottom:5px}
+  .recipe{padding:3px 6px;margin:2px 0}
+}
+</style>
+</head>
+<body>
+<div class="bar"><a href="./">◀ Back to Glow Bot Lab</a><button type="button" onclick="window.print()">🖨 Print this page</button></div>
+<main class="sheet">
+<header><h1>Glow Bot Cheat Sheet</h1><p>FLL BIOGLOW · SPIKE word blocks · works the same in Glow Bot Lab and the SPIKE app</p></header>
+<div class="cols">
+
+<section><h2><i style="--c:var(--ink)"></i>Our robot</h2>
+<div class="facts">
+<b>1 wheel turn</b><span>= 17.5 cm = 360°</span>
+<b>Quarter turn</b><span>≈ 11 cm of wheel travel (or use a gyro turn)</span>
+<b>Wheels</b><span>ports C + D</span>
+<b>Fork arm</b><span>port E · 90° from down to all the way up</span>
+<b>Color sensor</b><span>front right corner, looking down (port F in the simulator: check yours)</span>
+<b>Size</b><span>about 19 × 16 cm</span>
+</div></section>
+
+<section><h2><i style="--c:var(--mv)"></i>Driving</h2>
+<ul>
+<li><span class="k mv">move ↑ forward for 20 cm</span> drive a set distance</li>
+<li><span class="k mv">set movement speed to 50 %</span> slower is more exact</li>
+<li><span class="k mv">start moving</span> … <span class="k mv">stop moving</span> drive until something happens</li>
+<li><span class="k mv">move steering -30 for 20 cm</span> curve; minus is left, plus is right</li>
+<li><span class="k my">gyro turn ↻ right by 90 degrees</span> the most exact way to turn (a ready-made My Block in Glow Bot Lab; in the SPIKE app, make your own or use <span class="k mv">move ↻ spin right for 11 cm</span>)</li>
+<li><span class="k sn">set yaw angle to 0</span> first block of every program</li>
+</ul></section>
+
+<section><h2><i style="--c:var(--mt)"></i>The fork arm</h2>
+<ul>
+<li><span class="k mt">E run ↺ for 90 degrees</span> lift</li>
+<li><span class="k mt">E run ↻ for 90 degrees</span> lower</li>
+<li>Don't keep pushing once it hits the mat or the top. That strains the motor.</li>
+<li>After setting something down, back away with the fork still down, then lift.</li>
+</ul></section>
+
+<section><h2><i style="--c:var(--sn)"></i>Sensors and waiting</h2>
+<ul>
+<li><span class="k ct">wait 1 seconds</span></li>
+<li><span class="k ct">wait until</span> <span class="k sn">color is black ?</span> pause until it's true</li>
+<li><span class="k sn">reflected light</span> 0 = black, 100 = white</li>
+<li><span class="k sn">yaw angle</span> how far the robot has turned</li>
+<li><span class="k sn">timer</span> seconds since start (or since <span class="k sn">reset timer</span>)</li>
+<li><span class="k mt">C relative position</span> how far a wheel turned. Didn't change? You're stuck!</li>
+</ul></section>
+
+<section><h2><i style="--c:var(--ct)"></i>Loops and decisions</h2>
+<ul>
+<li><span class="k ct">repeat 4</span> do it a set number of times</li>
+<li><span class="k ct">repeat until</span> keep going until something is true, then move on</li>
+<li><span class="k ct">forever</span> never ends! Blocks under it never run</li>
+<li><span class="k ct">if … then … else</span> choose what to do</li>
+<li><span class="k op">and</span> <span class="k op">or</span> <span class="k op">not</span> <span class="k op">&lt; = &gt;</span> build a question</li>
+</ul></section>
+
+<section><h2><i style="--c:var(--va)"></i>Variables (counters)</h2>
+<ul>
+<li>Variables menu → <b>Make a Variable</b>, e.g. <b>lines</b></li>
+<li><span class="k va">set lines to 0</span> at the start</li>
+<li><span class="k va">change lines by 1</span> each time something happens</li>
+<li><span class="k op">lines = 4</span> inside <span class="k ct">repeat until</span> or <span class="k ct">if</span></li>
+<li><span class="k hb">write lines</span> show it on the hub screen to check</li>
+</ul></section>
+
+<section><h2><i style="--c:var(--my)"></i>My Blocks (functions)</h2>
+<p>Write the hard part once, then use it again and again.</p>
+<ul>
+<li>My Blocks → <b>Make a Block</b>, name it (“follow line”)</li>
+<li>Add an input (“seconds”) so each use can be different</li>
+<li>Put the steps under <span class="k my">define follow line</span></li>
+<li>Use it: <span class="k my">follow line 5.5</span></li>
+</ul></section>
+
+<section><h2><i style="--c:var(--ev)"></i>Two things at once</h2>
+<ul>
+<li>Each <span class="k ev">when …</span> block starts its own stack, and they all run together</li>
+<li><span class="k ev">when color is red</span> starts when the sensor sees red</li>
+<li><span class="k ev">broadcast done</span> → <span class="k ev">when I receive done</span> lets stacks talk to each other</li>
+<li><span class="k ev">broadcast done and wait</span> waits until that stack finishes</li>
+<li><span class="k ct">stop other stacks</span> ends the others (great for a forever loop)</li>
+<li><span class="k ct">stop and exit program</span> ends everything. Use it last</li>
+</ul></section>
+
+<section><h2><i style="--c:var(--ct)"></i>Recipes</h2>
+<div class="recipe"><b>Stop on a line</b><br>
+<span class="k mv">start moving</span> <span class="k ct">wait until</span> <span class="k sn">color is black</span> <span class="k mv">stop moving</span></div>
+<div class="recipe"><b>Line follower</b><br>
+<span class="k ct">forever</span> or <span class="k ct">repeat until</span>
+<div class="in"><span class="k ct">if</span> <span class="k sn">color is black</span> <span class="k mv">start moving steering 35</span><br><span class="k ct">else</span> <span class="k mv">start moving steering -35</span></div></div>
+<div class="recipe"><b>Count lines</b><br>
+<span class="k va">set lines to 0</span> <span class="k mv">start moving</span> <span class="k ct">repeat until</span> <span class="k op">lines = 4</span>
+<div class="in"><span class="k ct">wait until</span> <span class="k sn">white</span> <span class="k ct">wait until</span> <span class="k sn">black</span> <span class="k va">change lines by 1</span></div>
+<span class="k mv">stop moving</span></div>
+<div class="recipe"><b>Find home</b><br>
+<span class="k ct">repeat until</span> <span class="k sn">color is white</span> <span class="k op">or</span> <span class="k sn">timer &gt; 15</span>
+<div class="in"><span class="k mt">set C relative position to 0</span> <span class="k mv">move back 4 cm</span><br>
+<span class="k ct">if</span> <span class="k mt">C relative position</span> barely changed: sidestep (forward 6, turn 30, back 10, turn back 30)</div>
+then <span class="k mv">move back 6 cm more</span>: the sensor is at the front</div>
+</section>
+
+<section><h2><i style="--c:var(--go)"></i>Match Day</h2>
+<ul>
+<li><b>Same start every time:</b> back against the wall, line up on a mark, hands off, then press start.</li>
+<li><b>Push slowly:</b> 25 % speed or less when pushing a model.</li>
+<li><b>Get home:</b> drive the route backward, aim for the middle of the launch area, then back up a little extra.</li>
+<li><b>Fully home</b> (robot and everything it's touching) = free pickup.</li>
+<li><b>Grabbing it outside home</b> costs a precision token:</li>
+</ul>
+<table><tr><th>Tokens left</th><td>6</td><td>5</td><td>4</td><td>3</td><td>2</td><td>1</td><td>0</td></tr><tr><th>Points</th><td>50</td><td>50</td><td>35</td><td>25</td><td>15</td><td>10</td><td>0</td></tr></table>
+<p class="tip">The first rescue is free; the second costs 15. 90 points are “free”: inspection 20, keep 5+ tokens 50, don't touch the two habitats 20.</p>
+</section>
+
+<section><h2><i style="--c:var(--stop,#C7362F)"></i>When it doesn't work</h2>
+<ul>
+<li>Run it slowly and watch where it first goes wrong.</li>
+<li>Change one number at a time.</li>
+<li>Check the ports and that the battery is charged.</li>
+<li>Stuck in a forever loop? Use a second stack or <span class="k ct">repeat until</span>.</li>
+<li>Works once but not always? Fix the start before the program.</li>
+</ul></section>
+
+</div>
+</main>
+</body>
+</html>

@@ -52,6 +52,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .mark i{width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid var(--hub-ink)}
 h1{font-size:22px;font-weight:600;letter-spacing:.2px}
 .season{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.cheat{white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;min-height:36px;padding:5px 11px;font-size:14px;color:var(--ink)}
 .levels{display:flex;gap:6px;overflow-x:auto;min-width:0;flex:1;padding:3px;scrollbar-width:thin}
 .lv{flex:none;border:2px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 12px;font-weight:800;font-size:13px;white-space:nowrap}
 .lv .st{color:var(--muted);margin-left:4px;letter-spacing:1px;font-size:11px}
@@ -159,7 +160,7 @@ details ul{padding-left:18px}
 
 <div class="app">
   <header class="top">
-    <div class="brand"><span class="mark" aria-hidden="true"><i></i></span><h1>Glow Bot Lab</h1><span class="season">BIOGLOW practice</span></div>
+    <div class="brand"><span class="mark" aria-hidden="true"><i></i></span><h1>Glow Bot Lab</h1><span class="season">BIOGLOW practice</span><a class="btn sm cheat" href="https://brantley7.github.io/glow-bot-lab/cheatsheet.html" target="_blank" rel="noopener">📄 Cheat sheet</a></div>
     <nav class="levels" id="levels" aria-label="Challenges"></nav>
   </header>
   <main>
@@ -193,6 +194,7 @@ details ul{padding-left:18px}
         <details id="hintbox"><summary>Need a hint?</summary><p id="lhint"></p></details>
         <details><summary>Robot cheat sheet</summary>
           <ul>
+            <li><a href="https://brantley7.github.io/glow-bot-lab/cheatsheet.html" target="_blank" rel="noopener"><b>Open the full one-page cheat sheet</b></a>, with every kind of block and a Print button.</li>
             <li>One wheel rotation rolls the robot <b>17.5 cm</b>. 360 degrees is one rotation.</li>
             <li>A quarter turn on the spot takes about <b>11 cm</b> of wheel travel (226 degrees).</li>
             <li>Which port does what is set under <b>Robot setup</b>. The fork arm lifts 90 degrees from down to all the way up.</li>
