@@ -284,16 +284,17 @@ const CFG=Object.assign({drive:'CD',fork:'E',forkUp:'ccw',sensor:'F',dist:'',for
 const UPS=()=>CFG.forkUp==='cw'?1:-1;
 const IMAGES=[['♥ heart','♥'],['☺ happy','☺'],['☹ sad','☹'],['✓ yes','✓'],['✗ no','✗'],['↑ arrow up','↑'],['↓ arrow down','↓'],['← arrow left','←'],['→ arrow right','→'],['★ star','★'],['■ square','■'],['♪ music','♪']];
 const DUNITS=[['cm','cm'],['inches','in'],['%','%']];
+const MOVEDIR=[['↑ forward','fwd'],['↓ backward','back']];
 const SPIN=[['↻ clockwise','cw'],['↺ counterclockwise','ccw']];
 const COLORS=[['black','black'],['white','white'],['red','red'],['green','green'],['blue','blue'],['yellow','yellow'],['no color','none']];
 Blockly.defineBlocksWithJsonArray([
  {type:'ev_start',message0:'when program starts',nextStatement:null,style:'ev'},
- {type:'mv_move',message0:'move %1 for %2 %3',args0:[dd('DIR',[['↑ forward','fwd'],['↓ backward','back'],['↺ spin left','left'],['↻ spin right','right']]),val('AMOUNT'),dd('UNIT',UNITS)],...S,style:'mv'},
- {type:'mv_steer',message0:'move steering %1 for %2 %3',args0:[val('STEER'),val('AMOUNT'),dd('UNIT',UNITS)],...S,style:'mv',tooltip:'Steering: 0 is straight, 100 spins right, -100 spins left.'},
- {type:'mv_start_steer',message0:'start moving steering %1',args0:[val('STEER')],...S,style:'mv',tooltip:'Keeps moving until a stop block. 0 is straight.'},
+ {type:'mv_move',message0:'move %1 for %2 %3',args0:[dd('DIR',MOVEDIR),val('AMOUNT'),dd('UNIT',UNITS)],...S,style:'mv'},
+ {type:'mv_steer',message0:'move ↗ %1 for %2 %3',args0:[val('STEER'),val('AMOUNT'),dd('UNIT',UNITS)],...S,style:'mv',tooltip:'Steering: 0 is straight, 30 curves right, -30 curves left, 100 spins right in place, -100 spins left in place.'},
+ {type:'mv_start_steer',message0:'start moving ↗ %1',args0:[val('STEER')],...S,style:'mv',tooltip:'Keeps moving until a stop block. 0 is straight, 100 spins right, -100 spins left.'},
  {type:'mv_stop',message0:'stop moving',...S,style:'mv'},
  {type:'mv_speed',message0:'set movement speed to %1 %',args0:[val('SPEED')],...S,style:'mv'},
- {type:'mv_tank',message0:'move for %1 %2 at %3 %4 % speed',args0:[val('AMOUNT'),dd('UNIT',UNITS),val('L'),val('R')],...S,style:'mv',tooltip:'Left wheel speed, then right wheel speed.'},
+ {type:'mv_tank',message0:'move for %1 %2 at %3 %4 % speed',args0:[val('AMOUNT'),dd('UNIT',UNITS),val('L'),val('R')],...S,style:'mv',tooltip:'Old SPIKE block: the SPIKE app no longer has it, so it is not in the menus. Programs that already use it still run.'},
  {type:'mv_start_tank',message0:'start moving at %1 %2 % speed',args0:[val('L'),val('R')],...S,style:'mv'},
  {type:'mv_rotcm',message0:'set 1 motor rotation to %1 cm moved',args0:[val('CM')],...S,style:'mv',tooltip:'Tells the hub how far one wheel turn rolls. Your wheels roll 17.5 cm.'},
  {type:'mv_motors',message0:'set movement motors to %1',args0:[dd('PAIR',PAIRS)],...S,style:'mv',tooltip:'The two ports your wheel motors use, left wheel first. Robot setup says which ports your robot uses.'},
@@ -325,13 +326,13 @@ Blockly.defineBlocksWithJsonArray([
  {type:'op_logic',message0:'%1 %2 %3',args0:[val('A','Boolean'),dd('OP',[['and','and'],['or','or']]),val('B','Boolean')],output:'Boolean',inputsInline:true,style:'op'},
  {type:'op_not',message0:'not %1',args0:[val('A','Boolean')],output:'Boolean',inputsInline:true,style:'op'},
  {type:'op_random',message0:'pick random %1 to %2',args0:[val('A'),val('B')],output:'Number',inputsInline:true,style:'op'},
- {type:'mv_start_dir',message0:'start moving %1',args0:[dd('DIR',[['↑ forward','fwd'],['↓ backward','back'],['↺ spin left','left'],['↻ spin right','right']])],...S,style:'mv'},
- {type:'mv_steer_speed',message0:'move %1 for %2 %3 at %4 % speed',args0:[val('STEER'),val('AMOUNT'),dd('UNIT',UNITS),val('SPEED')],...S,style:'mv',tooltip:'Steering 0 is straight. The speed here is used for this block only.'},
- {type:'mv_start_steer_speed',message0:'start moving %1 at %2 % speed',args0:[val('STEER'),val('SPEED')],...S,style:'mv'},
+ {type:'mv_start_dir',message0:'start moving %1',args0:[dd('DIR',MOVEDIR)],...S,style:'mv'},
+ {type:'mv_steer_speed',message0:'move %1 for %2 %3 at %4 % speed',args0:[val('STEER'),val('AMOUNT'),dd('UNIT',UNITS),val('SPEED')],...S,style:'mv',tooltip:'Old SPIKE block: the SPIKE app no longer has it, so it is not in the menus. Programs that already use it still run.'},
+ {type:'mv_start_steer_speed',message0:'start moving %1 at %2 % speed',args0:[val('STEER'),val('SPEED')],...S,style:'mv',tooltip:'Old SPIKE block: the SPIKE app no longer has it, so it is not in the menus. Programs that already use it still run.'},
  {type:'mv_stop_method',message0:'set movement motors to %1 at stop',args0:[dd('M',[['brake','brake'],['hold','hold'],['coast','coast']])],...S,style:'mv',tooltip:'Accepted so your program matches the SPIKE app. The simulator robot always stops right away.'},
  {type:'mv_accel',message0:'set movement acceleration to %1',args0:[dd('A',[['default','default'],['fast','fast'],['balanced','balanced'],['smooth','smooth'],['slow','slow'],['very slow','vslow']])],...S,style:'mv',tooltip:'Accepted so your program matches the SPIKE app. It has no effect in the simulator.'},
- {type:'mt_run_for_speed',message0:'%1 run for %2 %3 at %4 % speed',args0:[dd('PORT',PORTC),val('AMOUNT'),dd('UNIT',MUNITS),val('SPEED')],...S,style:'mt',tooltip:'Positive speed turns clockwise (fork up), negative counterclockwise.'},
- {type:'mt_start_speed',message0:'%1 start motor at %2 % speed',args0:[dd('PORT',PORTC),val('SPEED')],...S,style:'mt'},
+ {type:'mt_run_for_speed',message0:'%1 run for %2 %3 at %4 % speed',args0:[dd('PORT',PORTC),val('AMOUNT'),dd('UNIT',MUNITS),val('SPEED')],...S,style:'mt',tooltip:'Old SPIKE block: the SPIKE app no longer has it, so it is not in the menus. Programs that already use it still run.'},
+ {type:'mt_start_speed',message0:'%1 start motor at %2 % power',args0:[dd('PORT',PORTC),val('SPEED')],...S,style:'mt',tooltip:'Positive power turns clockwise, negative counterclockwise.'},
  {type:'mt_speed_r',message0:'%1 speed',args0:[dd('PORT',PORTC)],output:'Number',style:'mt'},
  {type:'mt_rel',message0:'%1 relative position',args0:[dd('PORT',PORTC)],output:'Number',style:'mt'},
  {type:'mt_set_rel',message0:'%1 set relative position to %2',args0:[dd('PORT',PORTC),val('POS')],...S,style:'mt'},
@@ -411,8 +412,8 @@ function mk(type,over,fields,extra){
 const T=(type,over,fields)=>Object.assign({kind:'block'},mk(type,over,fields));
 const cat=(name,colour,contents)=>({kind:'category',name,colour,contents});
 function buildToolbox(){ return {kind:'categoryToolbox',contents:[
- cat('Motors','#0A84E0',[T('mt_run_for'),T('mt_run_for',null,{DIR:CFG.forkUp==='cw'?'ccw':'cw'}),T('mt_goto'),T('mt_start'),T('mt_stop'),T('mt_speed'),T('mt_pos'),T('mt_speed_r'),{kind:'label',text:'More Motors'},T('mt_run_for_speed'),T('mt_start_speed'),T('mt_goto_rel'),T('mt_set_rel'),T('mt_rel')]),
- cat('Movement','#E0399F',[T('mv_motors'),T('mv_rotcm'),T('mv_speed'),T('mv_move'),T('mv_move',{AMOUNT:11},{DIR:'right'}),T('mv_steer'),T('mv_start_steer'),T('mv_stop'),T('mv_tank'),T('mv_start_tank'),T('mv_start_dir'),{kind:'label',text:'More Movement'},T('mv_steer_speed'),T('mv_start_steer_speed'),T('mv_stop_method'),T('mv_accel')]),
+ cat('Motors','#0A84E0',[T('mt_run_for'),T('mt_run_for',null,{DIR:CFG.forkUp==='cw'?'ccw':'cw'}),T('mt_goto'),T('mt_start'),T('mt_stop'),T('mt_speed'),T('mt_pos'),T('mt_speed_r'),{kind:'label',text:'More Motors'},T('mt_goto_rel'),T('mt_set_rel'),T('mt_start_speed'),T('mt_rel')]),
+ cat('Movement','#E0399F',[T('mv_move'),T('mv_steer'),T('mv_steer',{STEER:100,AMOUNT:11}),T('mv_start_dir'),T('mv_start_steer',{STEER:30}),T('mv_stop'),T('mv_speed'),T('mv_motors'),T('mv_rotcm'),{kind:'label',text:'More Movement'},T('mv_start_tank'),T('mv_accel'),T('mv_stop_method')]),
  cat('Light','#8E5CF0',[T('lt_image_for'),T('lt_image'),T('lt_write'),T('lt_clear'),T('lt_bright'),T('lt_pixel'),T('lt_rotate'),T('lt_orient'),T('lt_center'),T('lt_ultra')]),
  cat('Sound','#C86BE0',[T('sd_play'),T('sd_start_sound'),T('sd_beep'),T('sd_beep_start'),T('sd_stop'),T('sd_effect_change'),T('sd_effect_set'),T('sd_effect_clear'),T('sd_vol_change'),T('sd_vol_set'),T('sd_volume')]),
  cat('Events','#C99700',[T('ev_start'),T('ev_color'),T('ev_force'),T('ev_dist'),T('ev_tilt'),T('ev_orient'),T('ev_gesture'),T('ev_button'),T('ev_timer'),T('ev_cond'),T('ev_receive'),T('ev_broadcast'),T('ev_broadcast_wait')]),
@@ -425,6 +426,7 @@ function buildToolbox(){ return {kind:'categoryToolbox',contents:[
 const TOOLBOX=buildToolbox();
 function program(list){
   let head=null; for(let i=list.length-1;i>=0;i--){ const b=Object.assign({},list[i]); if(head) b.next={block:head}; head=b; }
+  if(!list.length||list[0].type!=='mv_motors'){ const m=mk('mv_motors'); if(head) m.next={block:head}; head=m; }
   const s={type:'ev_start',x:24,y:24}; if(head) s.next={block:head};
   return {blocks:{languageVersion:0,blocks:[s]}};
 }
@@ -434,6 +436,7 @@ let L, W, R;
 const onPad=p=>Math.hypot(R.x-p.x,R.y-p.y)<=p.r-2;
 const inside=(z,x,y)=>z.r?Math.hypot(x-z.x,y-z.y)<=z.r:(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h);
 const allGates=()=>W.gates.every(g=>g.hit);
+const SETUP_BLOCKS=['mv_motors','mv_rotcm'];
 const usesBlock=t=>ws?ws.getAllBlocks(false).filter(b=>b.type===t&&b.isEnabled()&&!b.isShadow()).length:0;
 /* One practice challenge per robot-game mission, on the full BIOGLOW field.
    [mission, id, name, start side, points needed, the models that belong to it, task, tip] */
@@ -457,19 +460,19 @@ const MC=[
 const LEVELS=[
  {id:'roll',name:'First Roll',w:160,h:90,par:2,start:{x:22,y:45,d:0,arm:90},
   goal:'Drive forward and stop on the glowing pad.',
-  hint:'One wheel rotation rolls the robot 17.5 cm, and the pad is exactly 5 rotations away.\n1. In Movement, use “move ↑ forward for 10 cm”.\n2. Change the number, or switch cm to rotations.',
+  hint:'One wheel rotation rolls the robot 17.5 cm, and the pad is exactly 5 rotations away.\n1. In Movement, use “move ↑ forward for 10 cm”.\n2. Change the number, or switch cm to rotations.\nKeep “set movement motors to C+D” at the top. It tells the hub which ports the wheels use. The real hub drives A+B until you set it, so every program starts with it.',
   build:()=>({pads:[{x:109.5,y:45,r:9}]}),
   missions:()=>[{label:'Stop on the pad',done:onPad(W.pads[0])}],
   starter:()=>[mk('mv_move',{AMOUNT:10})]},
  {id:'turn',name:'Corner Turn',w:160,h:90,par:4,start:{x:22,y:70,d:0,arm:90},
   goal:'Go around the corner and park on the pad.',
-  hint:'1. Movement: “move ↑ forward” to drive up to the corner.\n2. Movement: “move ↺ spin left for 11 cm” makes about a quarter turn. Or use “gyro turn left by 90 degrees” from My Blocks.\n3. Movement: “move ↑ forward” again to reach the pad.',
+  hint:'1. Movement: “move ↑ forward” to drive up to the corner.\n2. Movement: “move ↗ -100 for 11 cm” (steering -100 spins left in place) makes about a quarter turn. Or use “gyro turn left by 90 degrees” from My Blocks.\n3. Movement: “move ↑ forward” again to reach the pad.',
   build:()=>({pads:[{x:112,y:24,r:9}],rocks:[{x:66,y:40,r:6}]}),
   missions:()=>[{label:'Stop on the pad',done:onPad(W.pads[0])}],
   starter:()=>[mk('mv_move',{AMOUNT:20})]},
  {id:'slalom',name:'Rock Slalom',w:160,h:90,par:7,start:{x:18,y:45,d:0,arm:90},
   goal:'Weave through both glow rings, then park on the pad without bumping anything.',
-  hint:'The steering block drives in a curve: negative numbers curve left, positive numbers curve right.\n1. Movement: “move steering -30 for 20 cm” to curve left around the first rock.\n2. Movement: another “move steering” with +30 to curve right around the second rock.\n3. Change the numbers until you pass through both rings.',
+  hint:'The steering block drives in a curve: negative numbers curve left, positive numbers curve right.\n1. Movement: “move ↗ -30 for 20 cm” to curve left around the first rock.\n2. Movement: another “move ↗” with +30 to curve right around the second rock.\n3. Change the numbers until you pass through both rings.',
   build:()=>({pads:[{x:142,y:45,r:9}],rocks:[{x:60,y:47,r:7},{x:104,y:43,r:7}],gates:[{x:60,y:20,r:10},{x:104,y:70,r:10}]}),
   missions:()=>[{label:'Pass ring 1 (above the first rock)',done:W.gates[0].hit},{label:'Pass ring 2 (below the second rock)',done:W.gates[1].hit},{label:'Stop on the pad',done:onPad(W.pads[0])},{label:'No bumps',done:W.bumps===0}],
   starter:()=>[mk('mv_steer',{STEER:-30,AMOUNT:20})]},
@@ -487,14 +490,14 @@ const LEVELS=[
   starter:()=>[mk('mv_start_steer')]},
  {id:'follow',name:'Line Follower',w:180,h:100,par:7,live:true,start:{x:19.8,y:43.7,d:0,arm:90},
   goal:'Follow the winding black line through both rings to the pad.',
-  hint:'Zig-zag along the edge of the line.\n1. Control: put an “if … else” inside the “forever” loop.\n2. Sensors: put “color is black ?” in the if.\n3. Movement: in the top part, “start moving steering 35”.\n4. Movement: in the else part, “start moving steering -35”.\nA slower movement speed (Movement: “set movement speed to 30%”) makes it smoother.',
+  hint:'Zig-zag along the edge of the line.\n1. Control: put an “if … else” inside the “forever” loop.\n2. Sensors: put “color is black ?” in the if.\n3. Movement: in the top part, “start moving ↗ 35”.\n4. Movement: in the else part, “start moving ↗ -35”.\nA slower movement speed (Movement: “set movement speed to 30%”) makes it smoother.',
   build:()=>{ const pts=[]; for(let x=28;x<=150;x+=2) pts.push([x,50+18*Math.sin((x-28)/122*2*Math.PI)]);
     return {lines:[{pts,w:3}],pads:[{x:160,y:52,r:11}],gates:[{x:58.5,y:68,r:13},{x:119.5,y:32,r:13}]}; },
   missions:()=>[{label:'Pass ring 1',done:W.gates[0].hit},{label:'Pass ring 2',done:W.gates[1].hit},{label:'Reach the pad',done:Math.hypot(R.x-160,R.y-52)<=11}],
   starter:()=>[{type:'ct_forever',inputs:{DO:{block:{type:'ct_ifelse',inputs:{COND:{block:{type:'sn_is_color',fields:{COLOR:'black'}}}}}}}}]},
  {id:'square',name:'Square Patrol',w:160,h:110,par:4,start:{x:42,y:84,d:0,arm:90},
   goal:'Patrol the square through all three rings and finish back on the pad. Can you do it with one repeat loop?',
-  hint:'Each side of the square is 55 cm.\n1. Control: “repeat 4”.\n2. Movement: inside it, “move ↑ forward for 55 cm”.\n3. Inside it too, a quarter turn to the left: Movement: “move ↺ spin left for 11 cm”, or My Blocks: “gyro turn left by 90 degrees”.',
+  hint:'Each side of the square is 55 cm.\n1. Control: “repeat 4”.\n2. Movement: inside it, “move ↑ forward for 55 cm”.\n3. Inside it too, a quarter turn to the left: Movement: “move ↗ -100 for 11 cm” (steering -100 spins left in place), or My Blocks: “gyro turn left by 90 degrees”.',
   build:()=>({pads:[{x:42,y:84,r:10}],gates:[{x:97,y:84,r:9},{x:97,y:29,r:9},{x:42,y:29,r:9}]}),
   missions:()=>[{label:'Pass all three rings',done:allGates()},{label:'Finish on the pad',done:onPad(W.pads[0])&&allGates()}],
   starter:()=>[mk('ct_repeat',{TIMES:4},null,{DO:{block:mk('mv_move',{AMOUNT:20})}})]},
@@ -512,7 +515,7 @@ const LEVELS=[
   starter:()=>[mk('my_turn',{DEG:20},{DIR:'left'}),mk('mv_move',{AMOUNT:40})]},
  {id:'myblock',name:'My Line Block',w:200,h:100,par:16,start:{x:19.8,y:43.7,d:0,arm:90},
   goal:'Make your own block that follows the line, then use it twice: follow the line to the first pad, stop there for a moment, then follow the line again to the last pad.',
-  hint:'1. My Blocks: press “Make a Block” and name it, for example “follow line”.\n2. Use the gear on the define block to add a number input called seconds.\n3. Under “define follow line”:\n   Sensors: “reset timer”\n   Control: “repeat until”, with Operators: “ > ” holding Sensors: “timer” and your seconds input\n   Inside the repeat: your line follower (Control: “if … else”, Sensors: “color is black ?”, Movement: “start moving steering 35” and “-35”)\n   Movement: “stop moving” after the repeat.\n4. Your main program is now short: My Blocks: “follow line” (some seconds), Control: “wait 1 seconds”, My Blocks: “follow line” (more seconds).\n5. Change only the numbers until it stops on each pad.\nThat is what a function is for: write the hard part once, use it many times.',
+  hint:'1. My Blocks: press “Make a Block” and name it, for example “follow line”.\n2. Use the gear on the define block to add a number input called seconds.\n3. Under “define follow line”:\n   Sensors: “reset timer”\n   Control: “repeat until”, with Operators: “ > ” holding Sensors: “timer” and your seconds input\n   Inside the repeat: your line follower (Control: “if … else”, Sensors: “color is black ?”, Movement: “start moving ↗ 35” and “-35”)\n   Movement: “stop moving” after the repeat.\n4. Your main program is now short: My Blocks: “follow line” (some seconds), Control: “wait 1 seconds”, My Blocks: “follow line” (more seconds).\n5. Change only the numbers until it stops on each pad.\nThat is what a function is for: write the hard part once, use it many times.',
   build:()=>{ const pts=[]; for(let x=28;x<=184;x+=2) pts.push([x,50+14*Math.sin((x-28)/78*Math.PI)]);
     return {lines:[{pts,w:3}],pads:[{x:101,y:44,r:12},{x:186,y:47,r:12}]}; },
   watch:()=>{ if(!W.rested&&onPad(W.pads[0])&&R.wl===0&&R.wr===0){ W.restT=(W.restT||0)+DT; if(W.restT>=.75) W.rested=true; } else if(!W.rested) W.restT=0; },
@@ -710,7 +713,7 @@ function homeOK(x,y,d){
 function inHome(x,y){ return !W.mat||x<W.mat.x||x>W.mat.x+W.mat.w||W.homes.some(h=>Math.hypot(x-h.cx,y-h.cy)<=h.r); }
 function placeRobot(){
   let s=L.start; const pl=L.drag&&((store.places||{})[L.id]||(L.match?store.place:null)); if(pl&&W&&homeOK(pl.x,pl.y,pl.d)) s=pl;
-  R={x:s.x,y:s.y,th:s.d*RAD,th0:s.d*RAD,wl:0,wr:0,degL:0,degR:0,pair:CFG.drive,arm:L.start.arm,armRate:0,moveSpeed:50,armSpeed:75,rotCm:17.5,slipL:1,slipR:1};
+  R={x:s.x,y:s.y,th:s.d*RAD,th0:s.d*RAD,wl:0,wr:0,degL:0,degR:0,pair:'AB',arm:L.start.arm,armRate:0,moveSpeed:50,armSpeed:75,rotCm:17.5,slipL:1,slipR:1};
   if(W){ W.trail=[]; for(const o of W.objs) o.car=false;
     if(L.mission===13&&W.id.crate){ const k=W.id.crate, q=toWorld(16.5,0); k.car=true; k.cl=[7,0]; k.x=q[0]; k.y=q[1]; } }
 }
@@ -920,7 +923,7 @@ function* motorTo(p,pos,spd){ if(kindOf(p)==='fork'){ yield* armTo(pos*UPS(),spd
 function setDrive(l,r){ const pr=R.pair||CFG.drive;
   if(pr===CFG.drive){ R.wl=l; R.wr=r; return; }
   if(pr===CFG.drive[1]+CFG.drive[0]){ R.wl=-r; R.wr=-l; return; }
-  R.wl=R.wr=0; if(!W.pairWarned&&(l||r)){ W.pairWarned=true; toast('The movement motors are set to '+pr[0]+'+'+pr[1]+', but the wheels are on '+CFG.drive[0]+'+'+CFG.drive[1]+'. Change the “set movement motors” block or Robot setup.'); } }
+  R.wl=R.wr=0; if(!W.pairWarned&&(l||r)){ W.pairWarned=true; toast(W.pairSet?'The movement motors are set to '+pr[0]+'+'+pr[1]+', but the wheels are on '+CFG.drive[0]+'+'+CFG.drive[1]+'. Change the “set movement motors” block or Robot setup.':'The wheels did not move. Like the real hub, the robot drives motors A+B until you tell it otherwise. Put Movement: “set movement motors to '+CFG.drive[0]+'+'+CFG.drive[1]+'” right under “when program starts”.'); } }
 function sensePort(p){ return p===CFG.sensor?sense():{c:'none',r:0}; }
 function distRaw(){ const c=Math.cos(R.th), s=Math.sin(R.th);
   for(let d=0;d<=200;d+=.5){ const x=R.x+(BODY.x1+d)*c, y=R.y+(BODY.x1+d)*s;
@@ -943,7 +946,7 @@ function* exec(b){
     case 'mv_speed': R.moveSpeed=clamp(num(b,'SPEED'),-100,100); break;
     case 'mv_tank': yield* driveFor(clamp(num(b,'L'),-100,100)/100*MAX_DPS,clamp(num(b,'R'),-100,100)/100*MAX_DPS,num(b,'AMOUNT'),f('UNIT')); break;
     case 'mv_start_tank': driveTok++; setDrive(clamp(num(b,'L'),-100,100)/100*MAX_DPS,clamp(num(b,'R'),-100,100)/100*MAX_DPS); break;
-    case 'mv_motors': R.pair=f('PAIR'); break;
+    case 'mv_motors': R.pair=f('PAIR'); W.pairSet=true; break;
     case 'mt_goto': yield* motorTo(f('PORT'),num(b,'POS')); break;
     case 'mv_rotcm': { const v=num(b,'CM'); if(v>0) R.rotCm=v; break; }
     case 'mt_run_for': yield* motorFor(f('PORT'),f('DIR')==='cw'?1:-1,num(b,'AMOUNT'),f('UNIT')); break;
@@ -1010,7 +1013,7 @@ function run(){
   if(L.sloppy&&!$('jig').checked){ R.x+=(Math.random()-.5)*3; R.y+=(Math.random()-.5)*3; R.th+=(Math.random()-.5)*20*RAD; R.th0=R.th; }
   W.launched=true; hideBanner(); if(lost) toast('Relaunched from outside home: one precision token lost.');
   if($('wobble').checked){ R.slipL=1+(Math.random()-.5)*.05; R.slipR=1+(Math.random()-.5)*.05; }
-  W.timer0=W.t; W.vars={}; W.display=''; W.center=''; W.btnDown={}; W.btnEdge={}; W.alerts={}; W.armStrained=false; W.strainT=0; W.strainOn=false; renderAlerts(); W.vol=100; W.pairWarned=false; R.pair=CFG.drive; W.mot={}; W.motZero={}; PORT_LIST.forEach(q=>{ W.motZero[q]=motPos(q); });
+  W.timer0=W.t; W.vars={}; W.display=''; W.center=''; W.btnDown={}; W.btnEdge={}; W.alerts={}; W.armStrained=false; W.strainT=0; W.strainOn=false; renderAlerts(); W.vol=100; W.pairWarned=false; W.pairSet=false; R.pair='AB'; W.mot={}; W.motZero={}; PORT_LIST.forEach(q=>{ W.motZero[q]=motPos(q); });
   threads=tops.map(b=>({gen:stack(b.getNextBlock()),done:false,hat:b.id}));
   W.hats=hats.map(b=>({b,prev:true,thread:null}));
   running=true; acc=0; setRunBtn();
@@ -1075,7 +1078,7 @@ function finish(why){
     if(streaks[L.id]<L.streak){ (L.streakMsg?toast(L.streakMsg(hit,streaks[L.id])):toast(hit?'On the pad! '+streaks[L.id]+' in a row. Run it again.':'Missed the pad, so the streak is back to 0. Try the launch jig.')); return; } }
   const ms=L.missions();
   if(ms.every(m=>m.done)){
-    const n=ws.getAllBlocks(false).filter(b=>!b.isShadow()&&b.isEnabled()).length, stars=n<=L.par?3:n<=L.par+2?2:1;
+    const n=ws.getAllBlocks(false).filter(b=>!b.isShadow()&&b.isEnabled()&&!SETUP_BLOCKS.includes(b.type)).length, stars=n<=L.par?3:n<=L.par+2?2:1;
     const me=P(); me.stars[L.id]=Math.max(me.stars[L.id]||0,stars); save(); renderLevels(); pushMe();
     burst(R.x,R.y,40);
     const i=LEVELS.indexOf(L), more=stars<3?' Fewer blocks earns more stars.':'';
@@ -1239,7 +1242,12 @@ function hud(){
   const lit=W.center&&W.center!=='off'; $('cDisp').hidden=!W.display&&!lit; $('hDisp').textContent=W.display; $('hLight').hidden=!lit; if(lit) $('hLight').style.background=ZC[W.center];
   if(L.match){ const t=Math.ceil(W.clock); $('hClock').textContent=Math.floor(t/60)+':'+String(t%60).padStart(2,'0'); }
 }
-function loadProgram(json){ loading=true; try{ Blockly.serialization.workspaces.load(json,ws); }catch(e){ console.error(e); ws.clear(); Blockly.serialization.workspaces.load(program([]),ws); } loading=false; ws.scroll(0,0); }
+/* Older saves used “move ↺ spin left” and “start moving ↻ spin right”. The SPIKE app does those with steering -100 / 100, so convert them. */
+function migrateProgram(json){ const walk=b=>{ if(!b||typeof b!=='object') return;
+  if((b.type==='mv_move'||b.type==='mv_start_dir')&&b.fields&&(b.fields.DIR==='left'||b.fields.DIR==='right')){ const st=b.fields.DIR==='right'?100:-100; b.type=b.type==='mv_move'?'mv_steer':'mv_start_steer'; delete b.fields.DIR; b.inputs=Object.assign({},b.inputs,{STEER:{shadow:{type:'math_number',fields:{NUM:st}}}}); }
+  for(const k in b) if(k!=='fields') walk(b[k]); };
+  walk(json); return json; }
+function loadProgram(json){ loading=true; try{ Blockly.serialization.workspaces.load(migrateProgram(json),ws); }catch(e){ console.error(e); ws.clear(); Blockly.serialization.workspaces.load(program([]),ws); } loading=false; ws.scroll(0,0); }
 let loading=false;
 function setLevel(i){
   if(running) finish('user');
@@ -1546,8 +1554,8 @@ function convertSpike(project){
       skip(op); return null; }
     function stmt(id){ const b=B[id]; const op=b.opcode, I=(n,d)=>valIn(b,n,d);
       switch(op){
-        case 'flippermove_move': return mk2('mv_move',{DIR:mvDir(fld(b,'DIRECTION')),UNIT:unit(fld(b,'UNIT'))},{AMOUNT:I('VALUE',10)});
-        case 'flippermove_startMove': return mk2('mv_start_dir',{DIR:mvDir(fld(b,'DIRECTION'))});
+        case 'flippermove_move': { const d=mvDir(fld(b,'DIRECTION')); return d==='left'||d==='right'?mk2('mv_steer',{UNIT:unit(fld(b,'UNIT'))},{STEER:{shadow:shadowOf(d==='right'?100:-100)},AMOUNT:I('VALUE',10)}):mk2('mv_move',{DIR:d,UNIT:unit(fld(b,'UNIT'))},{AMOUNT:I('VALUE',10)}); }
+        case 'flippermove_startMove': { const d=mvDir(fld(b,'DIRECTION')); return d==='left'||d==='right'?mk2('mv_start_steer',null,{STEER:{shadow:shadowOf(d==='right'?100:-100)}}):mk2('mv_start_dir',{DIR:d}); }
         case 'flippermove_steer': return mk2('mv_steer',{UNIT:unit(fld(b,'UNIT'))},{STEER:I('STEERING',0),AMOUNT:I('VALUE',10)});
         case 'flippermove_startSteer': return mk2('mv_start_steer',null,{STEER:I('STEERING',0)});
         case 'flippermove_stopMove': return mk2('mv_stop');

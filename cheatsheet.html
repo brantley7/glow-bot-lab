@@ -72,9 +72,10 @@ table{border-collapse:collapse;font-size:.95em} td,th{border:1px solid var(--lin
 <li><span class="k mv">move ↑ forward for 20 cm</span> drive a set distance</li>
 <li><span class="k mv">set movement speed to 50 %</span> slower is more exact</li>
 <li><span class="k mv">start moving</span> … <span class="k mv">stop moving</span> drive until something happens</li>
-<li><span class="k mv">move steering -30 for 20 cm</span> curve; minus is left, plus is right</li>
-<li><span class="k my">gyro turn ↻ right by 90 degrees</span> the most exact way to turn (a ready-made My Block in Glow Bot Lab; in the SPIKE app, make your own or use <span class="k mv">move ↻ spin right for 11 cm</span>)</li>
-<li><span class="k sn">set yaw angle to 0</span> first block of every program</li>
+<li><span class="k mv">move ↗ -30 for 20 cm</span> curve; minus is left, plus is right</li>
+<li><span class="k my">gyro turn ↻ right by 90 degrees</span> the most exact way to turn (a ready-made My Block in Glow Bot Lab; in the SPIKE app, make your own or use <span class="k mv">move ↗ 100 for 11 cm</span>)</li>
+<li><span class="k mv">set movement motors to C+D</span> always first: the hub drives A+B until you set it</li>
+<li><span class="k sn">set yaw angle to 0</span> next, so turns start from 0</li>
 </ul></section>
 
 <section><h2><i style="--c:var(--mt)"></i>The fork arm</h2>
@@ -137,7 +138,7 @@ table{border-collapse:collapse;font-size:.95em} td,th{border:1px solid var(--lin
 <span class="k mv">start moving</span> <span class="k ct">wait until</span> <span class="k sn">color is black</span> <span class="k mv">stop moving</span></div>
 <div class="recipe"><b>Line follower</b><br>
 <span class="k ct">forever</span> or <span class="k ct">repeat until</span>
-<div class="in"><span class="k ct">if</span> <span class="k sn">color is black</span> <span class="k mv">start moving steering 35</span><br><span class="k ct">else</span> <span class="k mv">start moving steering -35</span></div></div>
+<div class="in"><span class="k ct">if</span> <span class="k sn">color is black</span> <span class="k mv">start moving ↗ 35</span><br><span class="k ct">else</span> <span class="k mv">start moving ↗ -35</span></div></div>
 <div class="recipe"><b>Count lines</b><br>
 <span class="k va">set lines to 0</span> <span class="k mv">start moving</span> <span class="k ct">repeat until</span> <span class="k op">lines = 4</span>
 <div class="in"><span class="k ct">wait until</span> <span class="k sn">white</span> <span class="k ct">wait until</span> <span class="k sn">black</span> <span class="k va">change lines by 1</span></div>
